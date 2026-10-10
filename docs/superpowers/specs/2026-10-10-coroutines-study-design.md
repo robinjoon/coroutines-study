@@ -80,3 +80,22 @@
 
 루트 README에 다음을 둔다: 학습 방법, 과제 유형 a/b/c, 진행 순서(1부 → 2부), 실행 명령(`./gradlew :<module>:test --tests 'FQCN'`),
 runTest/가상 시간 도구 안내, 처음 실행 시 실패하는 테스트 목록(의도된 실패).
+
+## 8. 구현 중 확정·변경 사항
+
+- **transactions/stage0 두 번째 테스트**: 합의 표의 `suspensionChangesObservedTransactionBoundary`(c)를 `suspendTransactionalDoesNotCoverJdbcWork`(a)로 바꿨다.
+  Boot 4.1.1 / Framework 7.0.9 실측 결과, `JdbcTransactionManager`에서 `@Transactional suspend fun`은 중단 지점 유무와 상관없이 본문이 트랜잭션 밖에서 실행되었다(`isActualTransactionActive()==false`, 예외 후 롤백 없음).
+  Spring AOP가 suspend 메서드를 `Mono`로 감싸서 반환하고, Platform 트랜잭션 매니저는 그 `Mono`를 일반 반환값으로 다루기 때문이다. 주석 해제로 비교할 차이가 없어 관찰형(a)이 더 정확하다.
+- **suspend 컨트롤러 재개 스레드**: `delay` 이후 `kotlinx.coroutines.DefaultExecutor` 스레드에서 재개됨을 실측했다(Unconfined 시작). controller/stage0에서 "요청 스레드와 다르다"만 단언하고 스레드 이름은 단언하지 않는다.
+- **가상 스레드 토글**: `@SpringBootTest(properties=[...])`에서 같은 키는 뒤의 값이 이긴다는 것을 실측해 c 과제를 "주석 해제 한 줄"로 구성했다.
+- **verify.sh 허용 실패 유형**: MVC 비동기 디스패치 중 TODO가 던진 예외는 `jakarta.servlet.ServletException`으로 감싸져 보고되므로 허용 목록에 추가했다.
+- **ServletException 허용 조건 강화**: verify.sh는 ServletException의 원인이 `NotImplementedError`일 때만 의도된 실패로 인정한다(교차 리뷰 M4).
+
+## 9. 교차 리뷰 반영 (2026-10-11)
+
+- 검증 프로토콜에 **잘못된 풀이 거부 검증**을 추가했다. `.solutions/wrong/<case>/`에 흔한 오답을 두고, `.solutions/verify-wrong.sh <module>`이 `wrong-cases-<module>.txt`에 적힌 테스트가 실제로 실패하는지 확인한다.
+  관찰 가능한 차이를 만들지 않는 코드 냄새(예: 구조화된 동시성 때문에 결과가 같아지는 취소 삼키기)는 테스트로 강제하지 않고 주석으로 경고한다.
+- 2부 반영: 외부 timeout을 서비스 오류로 바꾸던 참조 풀이 수정 및 케이스 추가(H1), 요청 스레드 점유 검출 장치(M1, 전용 `request-thread`와 bounded gate),
+  MDC 교차 완료 순서와 worker 실행 확인(M2), 실패·취소 후 permit 반납(M3), JDBC 취소 한계 설명(M5), deadline 메서드의 일반 실패 정책 케이스(M6), GlobalScope 설명 정정(L2).
+- 공식 링크 위치: 4절의 "각 테스트 KDoc에 링크"는 "클래스 또는 메서드 KDoc에 링크"로 완화한다. 2부는 클래스 KDoc에 단원 링크를 모아 둔다(교차 리뷰 L1).
+- 코루틴 디버그 모드(테스트 시 `-ea`)에서는 스레드 이름에 ` @coroutine#N`이 붙는다. 스레드 이름을 비교해야 하면 앞부분만 쓴다.
