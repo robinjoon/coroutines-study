@@ -60,7 +60,7 @@
 - 참조 풀이는 git에서 제외된 `.solutions/` 아래 저장소와 같은 상대 경로로 둔다. **커밋하지 않으며 작업 종료 시 삭제한다.**
   - `.solutions/default/<repo 상대경로>`: a의 올바른 기대값, b의 구현, c의 기본 상태 기대값을 담은 파일 전체 사본
   - `.solutions/toggled/<repo 상대경로>`: c 테스트에서 주석 줄을 해제하고 그 상태의 올바른 기대값을 담은 파일 전체 사본
-  - `.solutions/expected-failures.txt`: 학습자 상태에서 실패해야 하는 `FQCN#method` 목록(한 줄에 하나)
+  - `.solutions/expected-failures-<module>.txt`: 학습자 상태에서 실패해야 하는 `FQCN#method` 목록(한 줄에 하나)
 - `.solutions/verify.sh <module>`이 확인하는 것:
   1. 학습자 상태: 실패 테스트 집합 == expected-failures(해당 모듈), 실패 원인은 AssertionError/NotImplementedError만, 나머지는 통과
   2. default overlay: 전부 통과
