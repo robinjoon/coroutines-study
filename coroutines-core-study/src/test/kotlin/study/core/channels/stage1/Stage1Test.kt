@@ -22,24 +22,42 @@ class Stage1Test {
         runTest {
             val events = mutableListOf<String>()
             var channel: ReceiveChannel<Int>? = null
+            // 1. 정상 수집: close가 빠지면 소비가 끝나지 않으므로 가상 시간으로 기다림을 제한한다.
             val all =
-                consumeProduced(listOf(1, 2, 3), events) { input ->
-                    channel = input
-                    input.toList()
+                withTimeoutOrNull(100) {
+                    consumeProduced(listOf(1, 2, 3), events) { input ->
+                        channel = input
+                        input.toList()
+                    }
                 }
-            assertThat(all).containsExactly(1, 2, 3)
-            assertThat(channel!!.receiveCatching().isClosed).isTrue()
+            assertThat(all)
+                .describedAs("정상 생산이 끝나면 채널을 닫아 소비와 consumeProduced가 반환해야 한다")
+                .containsExactly(1, 2, 3)
+            assertThat(channel!!.tryReceive().isClosed).isTrue()
             assertThat(events).containsExactly("producer:start", "sent:1", "sent:2", "sent:3", "producer:finally")
 
             events.clear()
+            // 2. 조기 종료: 전송을 기다리는 생산자를 남겨 두면 이 호출은 반환하지 못한다.
             val firstOnly =
-                consumeProduced(listOf(1, 2, 3), events) { input ->
-                    listOf(input.receive())
+                withTimeoutOrNull(100) {
+                    consumeProduced(listOf(1, 2, 3), events) { input ->
+                        channel = input
+                        listOf(input.receive())
+                    }
                 }
-            assertThat(firstOnly).containsExactly(1)
-            assertThat(events).contains("producer:start", "producer:finally").doesNotContain("sent:2", "sent:3")
+            assertThat(firstOnly)
+                .describedAs("소비자가 먼저 끝나면 전송 대기 중인 생산자를 정리하고 반환해야 한다")
+                .containsExactly(1)
+            assertThat(channel!!.tryReceive().isClosed)
+                .describedAs("소비가 끝난 뒤에는 채널도 닫히거나 취소되어야 한다")
+                .isTrue()
+            assertThat(events)
+                .describedAs("소비가 끝나면 나머지 값을 보내지 않고 생산자를 정리해야 한다")
+                .contains("producer:start", "producer:finally")
+                .doesNotContain("sent:2", "sent:3")
 
             events.clear()
+            // 3. 소비 실패: 예외를 호출자에게 전달하고 생산자를 정리한다.
             val failure =
                 runCatching {
                     consumeProduced(listOf(1, 2, 3), events) { input ->
@@ -47,10 +65,14 @@ class Stage1Test {
                         error("consumer failed")
                     }
                 }.exceptionOrNull()
-            assertThat(failure).isInstanceOf(IllegalStateException::class.java).hasMessage("consumer failed")
+            assertThat(failure)
+                .describedAs("소비자의 실패를 정상 결과로 바꾸지 않고 호출자에게 전달해야 한다")
+                .isInstanceOf(IllegalStateException::class.java)
+                .hasMessage("consumer failed")
             assertThat(events).contains("producer:finally")
 
             events.clear()
+            // 4. 부모 timeout: 소비 중 부모가 취소되어도 생산자의 finally가 실행된다.
             val timedOut =
                 withTimeoutOrNull(100) {
                     consumeProduced(listOf(1, 2, 3), events) { input ->

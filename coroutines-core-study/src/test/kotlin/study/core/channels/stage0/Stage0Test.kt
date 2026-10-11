@@ -37,9 +37,10 @@ class Stage0Test {
 
             assertThat(received).isEqualTo(7)
             // TODO(a): send의 시작과 완료를 구분해 세 시점의 기대값을 채워 보자.
-            assertThat(beforeRunCurrent).containsExactly("")
-            assertThat(beforeReceive).containsExactly("")
-            assertThat(completedBeforeReceive).isTrue()
-            assertThat(events).containsExactly("")
+            // 사건이 없다면 isEmpty() 또는 인자 없는 containsExactly()로 표현한다.
+            assertThat(beforeRunCurrent).describedAs("runCurrent 전").containsExactly("")
+            assertThat(beforeReceive).describedAs("receive 전").containsExactly("")
+            assertThat(completedBeforeReceive).describedAs("receive 전 sender 상태").isTrue()
+            assertThat(events).describedAs("receive와 join 후").containsExactly("")
         }
 }
