@@ -1,8 +1,11 @@
 package study.core.basics.stage1
 
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.currentTime
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -14,15 +17,30 @@ class Stage1Test {
      * [공식 문서](https://kotlinlang.org/docs/coroutines-basics.html#create-a-coroutine-scope-with-the-coroutinescope-function)
      * 관찰 지점: 부모 본문, 두 자식의 완료, 함수 반환을 events로 비교하라.
      * 본문 종료와 함수 반환 사이에 다른 사건들이 들어오는 이유는 무엇일까?
+     *
+     * 이 테스트는 결과 순서만 보지 않는다. 가상 시각 0에 자식 코루틴 두 개가 실제로 떠서 기다리고 있는지도 확인한다.
+     * 한 코루틴 안에서 delay와 기록을 차례로 이어 붙여 같은 순서를 흉내 내면 통과하지 못한다.
      */
     @Test
     fun parentReturnsAfterChildrenComplete() =
         runTest {
             val events = mutableListOf<String>()
+            val caller =
+                launch {
+                    greetWithChildren(events)
+                    events += "caller:returned"
+                }
 
-            greetWithChildren(events)
-            events += "caller:returned"
+            runCurrent()
+            assertThat(events).containsExactly("parent:body-end")
+            assertThat(caller.waitingChildCoroutines()).isEqualTo(2)
 
+            advanceTimeBy(100)
+            runCurrent()
+            assertThat(events).containsExactly("parent:body-end", "first:end")
+            assertThat(caller.isActive).isTrue()
+
+            caller.join()
             assertThat(events).containsExactly("parent:body-end", "first:end", "second:end", "caller:returned")
             assertThat(currentTime).isEqualTo(200L)
         }
@@ -52,4 +70,9 @@ class Stage1Test {
             assertThat(events).containsExactly("caller:before-join", "child:end", "caller:after-join")
             assertThat(currentTime).isEqualTo(100L)
         }
+
+    // 이 Job 아래에서 아직 끝나지 않은 가장 안쪽 코루틴(스스로 자식이 없는 Job) 수.
+    // coroutineScope가 만드는 중간 Job은 세지 않고, 그 안에서 launch한 자식만 센다.
+    private fun Job.waitingChildCoroutines(): Int =
+        children.sumOf { child -> if (child.children.none()) 1 else child.waitingChildCoroutines() }
 }
