@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test
  * 상품 요약 API는 가격 API와 재고 API를 호출해서 결과를 합친다.
  * 이 단원은 공식 가이드의 "Composing suspending functions"를 백엔드 시나리오에 적용한다.
  *
- * - 공식 가이드(순차 실행이 기본): https://kotlinlang.org/docs/composing-suspending-functions.html#sequential-by-default
- * - runTest와 가상 시간: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/
+ [* - 공식 가이드(순차 실행이 기본)](https://kotlinlang.org/docs/composing-suspending-functions.html#sequential-by-default)
+ * - [runTest와 가상 시간](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/)
  */
 class Stage0Test {
 

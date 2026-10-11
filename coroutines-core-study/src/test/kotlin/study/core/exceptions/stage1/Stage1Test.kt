@@ -15,7 +15,7 @@ class Stage1Test {
     /**
      * supervisorScope는 한 자식의 실패 때문에 정상 형제 작업까지 취소되는 것을 막는다.
      * 실패를 없애 주지는 않으므로 각 async의 await에서 실패 정책을 직접 적용해야 한다.
-     * 공식 문서: https://kotlinlang.org/docs/exception-handling.html#supervision-scope
+     * [공식 문서](https://kotlinlang.org/docs/exception-handling.html#supervision-scope)
      * 관찰 지점: 실패 보고와 정상 결과, 정상 형제의 finally가 모두 남는지 확인하라.
      * 실패를 따로 처리했을 때 정상 형제가 끝까지 실행되는 이유는 무엇일까?
      */
@@ -50,7 +50,7 @@ class Stage1Test {
     /**
      * supervision은 자식 실패의 전파 방향을 바꾸지만 부모 취소를 무시하지 않는다.
      * 부모가 취소되면 supervisorScope 안의 자식들도 취소되고 finally를 실행한다.
-     * 공식 문서: https://kotlinlang.org/docs/exception-handling.html#supervision-scope
+     * [공식 문서](https://kotlinlang.org/docs/exception-handling.html#supervision-scope)
      * 관찰 지점: 부모 취소 후 두 자식의 정리와 일반 실패 보고의 부재를 확인하라.
      * 자식 실패는 격리하면서 부모 취소는 전달하는 이유는 무엇일까?
      */

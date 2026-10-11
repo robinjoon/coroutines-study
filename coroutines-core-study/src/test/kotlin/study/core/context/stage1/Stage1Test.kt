@@ -17,7 +17,7 @@ class Stage1Test {
      * withContext는 지정한 블록의 실행 context를 바꾸고 블록이 끝나면 호출자의 context로 돌아온다.
      * dispatcher 변경이 실제 thread 이동인지 확인하려고 이 테스트는 전용 단일 thread 실행기를 만든다.
      * 테스트가 만든 실행기는 성공이나 실패와 관계없이 use에서 닫는다.
-     * 공식 문서: https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#jumping-between-threads
+     * [공식 문서](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#jumping-between-threads)
      * 관찰 지점: 블록 안팎의 thread ID와 dispatcher 객체, 실패 후 복귀와 대기 중 호출자의 진행을 확인하라.
      * 선택한 블록이 끝난 뒤 호출자의 thread에서 다시 실행되는 이유는 무엇일까?
      */

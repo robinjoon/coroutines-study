@@ -10,7 +10,7 @@ class Stage0Test {
     /**
      * suspend 함수 호출은 기본적으로 순차 실행된다. 각 호출이 100 ms씩 기다리면 두 대기 시간이 더해진다.
      * runTest는 실제로 잠들지 않고 가상 시각을 진행하므로 이 비용을 빠르게 관찰할 수 있다.
-     * 공식 문서: https://kotlinlang.org/docs/composing-suspending-functions.html#sequential-by-default
+     * [공식 문서](https://kotlinlang.org/docs/composing-suspending-functions.html#sequential-by-default)
      * 관찰 지점: 두 작업의 시작과 끝, 결과 합계, currentTime을 확인하라.
      * suspend를 두 번 호출했는데 시간이 겹치지 않은 이유는 무엇일까?
      */

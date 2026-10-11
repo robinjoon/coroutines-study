@@ -17,8 +17,8 @@ import java.util.concurrent.Executors
  *
  * 이 테스트 코드는 수정하지 않는다. RequestContextRunner의 TODO를 구현해서 통과시키자.
  *
- * - 공식 가이드(Thread-local data): https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#thread-local-data
- * - MDCContext: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-slf4j/kotlinx.coroutines.slf4j/-m-d-c-context/
+ [* - 공식 가이드(Thread-local data)](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#thread-local-data)
+ * - [MDCContext](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-slf4j/kotlinx.coroutines.slf4j/-m-d-c-context/)
  */
 class Stage1Test {
 

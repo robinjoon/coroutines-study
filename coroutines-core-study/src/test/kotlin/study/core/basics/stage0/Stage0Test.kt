@@ -12,7 +12,7 @@ class Stage0Test {
     /**
      * suspend 함수는 실행을 잠시 멈출 수 있는 함수다. 선언만으로 새 코루틴이 생기지는 않는다.
      * 같은 코루틴에서 두 함수를 호출하면 첫 호출이 끝난 뒤 다음 호출로 넘어간다.
-     * 공식 문서: https://kotlinlang.org/docs/coroutines-basics.html#suspending-functions
+     * [공식 문서](https://kotlinlang.org/docs/coroutines-basics.html#suspending-functions)
      * 관찰 지점: events의 순서와 두 번의 delay가 더해진 currentTime을 확인하라.
      * 중단할 수 있는 함수인데도 순서가 바뀌지 않은 이유는 무엇일까?
      */
@@ -39,8 +39,8 @@ class Stage0Test {
      * 코루틴 본문은 바로 실행되지 않고 runTest의 기본 dispatcher 대기열에 "실행할 차례"로 등록된다.
      * 코루틴이 delay로 멈추면, 이어서 실행할 부분이 그 delay가 끝나는 가상 시각에 다시 대기열에 예약된다.
      * runCurrent는 현재 가상 시각에 실행할 차례인 것만 진행하고 가상 시계를 앞으로 돌리지 않는다.
-     * 용어(코루틴, Job, dispatcher, 대기열): docs/concepts.md
-     * 공식 문서: https://kotlinlang.org/docs/coroutines-basics.html#coroutinescope-launch
+     * [용어 정리(코루틴, Job, dispatcher, 대기열): docs/concepts.md](https://github.com/robinjoon/coroutines-study/blob/master/docs/concepts.md)
+     * [공식 문서](https://kotlinlang.org/docs/coroutines-basics.html#coroutinescope-launch)
      * 관찰 지점: launch 직후, runCurrent 후, join 후의 events를 비교하라.
      * 코루틴을 만들었는데 첫 사건이 아직 기록되지 않은 이유는 무엇일까?
      */

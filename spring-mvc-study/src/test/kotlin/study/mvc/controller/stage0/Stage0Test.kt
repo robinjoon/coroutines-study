@@ -20,9 +20,9 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
  * MVC는 `Mono` 같은 비동기 반환값을 받으면 Servlet 비동기 처리(asynchronous request processing)를 시작한다.
  * 요청 스레드는 결과를 기다리지 않고 컨테이너로 돌아가고, 코루틴이 끝나면 요청이 한 번 더 디스패치되어 응답이 쓰인다.
  *
- * - Spring 코루틴 지원: https://docs.spring.io/spring-framework/reference/languages/kotlin/coroutines.html
- * - MVC 비동기 요청: https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-async.html
- * - MockMvc 비동기 테스트: https://docs.spring.io/spring-framework/reference/testing/mockmvc/hamcrest/async-requests.html
+ [* - Spring 코루틴 지원](https://docs.spring.io/spring-framework/reference/languages/kotlin/coroutines.html)
+ * - [MVC 비동기 요청](https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-async.html)
+ * - [MockMvc 비동기 테스트](https://docs.spring.io/spring-framework/reference/testing/mockmvc/hamcrest/async-requests.html)
  */
 @SpringBootTest(classes = [Stage0Test.Config::class])
 @AutoConfigureMockMvc

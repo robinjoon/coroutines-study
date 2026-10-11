@@ -16,8 +16,8 @@ import java.util.concurrent.Executors
  * JDBC 드라이버는 결과가 올 때까지 호출한 스레드를 붙잡고 기다린다(블로킹).
  * 함수에 `suspend` 키워드를 붙여도 내부의 블로킹 호출은 그대로다. 코루틴은 `delay` 같은 "중단 지점"에서만 스레드를 양보한다.
  *
- * - 공식 가이드(중단 함수): https://kotlinlang.org/docs/coroutines-basics.html
- * - Dispatchers.IO: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html
+ [* - 공식 가이드(중단 함수)](https://kotlinlang.org/docs/coroutines-basics.html)
+ * - [Dispatchers.IO](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html)
  */
 class Stage0Test {
 

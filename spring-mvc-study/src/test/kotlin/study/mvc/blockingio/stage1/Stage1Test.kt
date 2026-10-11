@@ -31,9 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * 블로킹 JDBC를 코루틴에서 호출할 때는 "어느 스레드에서 블로킹할지"와 "동시에 몇 개까지 블로킹할지"를 정해야 한다.
  *
- * - withContext: https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html
- * - Dispatchers.IO / limitedParallelism: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html
- * - Semaphore: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-semaphore/
+ [* - withContext](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html)
+ * - [Dispatchers.IO / limitedParallelism](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html)
+ * - [Semaphore](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-semaphore/)
  */
 @SpringBootTest(
     classes = [Stage1Test.Config::class],
@@ -66,7 +66,7 @@ class Stage1Test {
      * 주의: 다른 디스패처로 옮겨도 JDBC는 여전히 블로킹이다. 블로킹을 "없애는" 것이 아니라 "격리"하는 것이다.
      * 또 코루틴을 취소하거나 withTimeout을 걸어도 이미 실행 중인 JDBC 호출이 멈춘다는 보장은 없다(취소는 협력적이다).
      * 실행 중인 쿼리를 끊으려면 JDBC query timeout, 커넥션 획득 timeout, 커넥션 풀 크기를 따로 설정해야 한다.
-     * (https://kotlinlang.org/docs/cancellation-and-timeouts.html#cancellation-is-cooperative)
+     * 공식 가이드: [취소는 협력적이다](https://kotlinlang.org/docs/cancellation-and-timeouts.html#cancellation-is-cooperative)
      *
      * runBlocking으로 감싸거나 DAO를 그냥 호출하면 호출한 스레드가 조회가 끝날 때까지 붙잡힌다. 이 테스트는 그런 구현을 통과시키지 않는다.
      *

@@ -11,7 +11,7 @@ class Stage0Test {
     /**
      * capacity가 0인 rendezvous Channel은 값을 저장할 버퍼가 없다.
      * send는 받을 쪽과 만날 때까지 중단되며 receive가 진행되면 완료할 수 있다.
-     * 공식 문서: https://kotlinlang.org/docs/channels.html#channel-basics
+     * [공식 문서](https://kotlinlang.org/docs/channels.html#channel-basics)
      * 관찰 지점: scheduler 실행 전, receive 전, receive 후의 send 완료 사건을 비교하라.
      * send를 실행했는데 send:end가 바로 기록되지 않은 이유는 무엇일까?
      */

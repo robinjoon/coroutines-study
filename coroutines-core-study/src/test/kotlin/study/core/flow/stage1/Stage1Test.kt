@@ -16,7 +16,7 @@ class Stage1Test {
     /**
      * map은 값을 바꾸고 filter는 조건에 맞는 값을 골라낸다.
      * take는 필요한 개수를 받으면 upstream 생산을 중단하며 생산 코드의 finally도 실행된다.
-     * 공식 문서: https://kotlinlang.org/docs/coroutines-flow.html#size-limiting-operators
+     * [공식 문서](https://kotlinlang.org/docs/coroutines-flow.html#size-limiting-operators)
      * 관찰 지점: 두 배로 바꾼 4의 배수 두 개, 생산한 원본 값, 정상·실패·timeout 시 정리를 확인하라.
      * 원본 열 개를 준비했는데 일부만 생산하고 finally로 넘어가는 이유는 무엇일까?
      */
@@ -63,7 +63,7 @@ class Stage1Test {
      * flowOn은 자신보다 앞에 있는 upstream의 실행 context를 바꾼다.
      * collect하는 쪽은 호출자의 context를 유지한다.
      * 여기서는 같은 가상 시간 scheduler를 쓰는 서로 다른 dispatcher 객체로 경계를 확인한다.
-     * 공식 문서: https://kotlinlang.org/docs/coroutines-flow.html#flowon-operator
+     * [공식 문서](https://kotlinlang.org/docs/coroutines-flow.html#flowon-operator)
      * 관찰 지점: emit과 collect에서 관찰한 dispatcher 객체를 비교하라. 이 실습은 실제 thread 이동을 증명하지 않는다.
      * upstream을 옮겼는데 collector의 dispatcher는 그대로인 이유는 무엇일까?
      */

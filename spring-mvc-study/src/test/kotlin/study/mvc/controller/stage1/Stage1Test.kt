@@ -18,8 +18,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
  * suspend 서비스를 컨트롤러에서 호출하고, 실패를 @RestControllerAdvice로 응답하게 만들어 보자.
  * 이 테스트 코드는 수정하지 않는다. ProductController와 ProductExceptionHandler의 TODO를 구현해서 통과시키자.
  *
- * - Spring 코루틴 지원: https://docs.spring.io/spring-framework/reference/languages/kotlin/coroutines.html
- * - 예외 처리: https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-exceptionhandler.html
+ [* - Spring 코루틴 지원](https://docs.spring.io/spring-framework/reference/languages/kotlin/coroutines.html)
+ * - [예외 처리](https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-exceptionhandler.html)
  */
 @SpringBootTest(classes = [Stage1Test.Config::class])
 @AutoConfigureMockMvc

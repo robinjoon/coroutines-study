@@ -13,8 +13,8 @@ import java.util.concurrent.Executors
  * runBlocking은 "코루틴 세계"와 "블로킹 세계"를 잇는 다리다. main 함수나 테스트처럼 블로킹 진입점에서만 쓰도록 만들어졌다.
  * 코루틴 안에서 runBlocking을 호출하면, 기다리는 동안 현재 스레드를 통째로 붙잡는다.
  *
- * - 공식 가이드(runBlocking): https://kotlinlang.org/docs/coroutines-basics.html
- * - runBlocking API 문서: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html
+ [* - 공식 가이드(runBlocking)](https://kotlinlang.org/docs/coroutines-basics.html)
+ * - [runBlocking API 문서](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html)
  */
 class Stage0Test {
 

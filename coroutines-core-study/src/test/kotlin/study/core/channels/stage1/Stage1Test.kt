@@ -13,7 +13,7 @@ class Stage1Test {
      * Channel을 만든 쪽은 생산자의 수명과 채널의 종료를 함께 책임져야 한다.
      * 정상 생산이 끝나면 close로 더 이상 값이 없음을 알리고 소비자가 일찍 끝나면 생산자를 취소한다.
      * 소비자가 실패하거나 부모가 취소될 때도 같은 정리 계약이 필요하다.
-     * 공식 문서: https://kotlinlang.org/docs/channels.html#closing-and-iteration-over-channels
+     * [공식 문서](https://kotlinlang.org/docs/channels.html#closing-and-iteration-over-channels)
      * 관찰 지점: 정상 수집의 끝, 조기 종료·소비 실패·timeout 뒤 생산자 finally를 확인하라.
      * 소비가 끝난 뒤 보내는 생산자를 남겨 두면 어떤 문제가 생길까?
      */

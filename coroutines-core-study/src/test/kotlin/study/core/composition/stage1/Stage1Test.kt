@@ -12,7 +12,7 @@ class Stage1Test {
      * async는 결과를 가진 자식 코루틴을 만들고 await는 그 결과를 기다린다.
      * 두 async를 먼저 만들면 독립적인 두 작업의 대기 시간을 겹칠 수 있다.
      * 같은 scope에 속한 자식은 다른 자식의 실패나 부모 취소 때 함께 정리된다.
-     * 공식 문서: https://kotlinlang.org/docs/composing-suspending-functions.html#structured-concurrency-with-async
+     * [공식 문서](https://kotlinlang.org/docs/composing-suspending-functions.html#structured-concurrency-with-async)
      * 관찰 지점: 완료 전에 두 시작 사건이 있는지, 결과 합계와 가상 시간, 실패·timeout 후 정리를 확인하라.
      * await를 호출하는 순서와 작업이 시작하는 순서가 다른 이유는 무엇일까?
      */
