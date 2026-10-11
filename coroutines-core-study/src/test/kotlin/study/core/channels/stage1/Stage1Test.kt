@@ -33,7 +33,10 @@ class Stage1Test {
             assertThat(all)
                 .describedAs("정상 생산이 끝나면 채널을 닫아 소비와 consumeProduced가 반환해야 한다")
                 .containsExactly(1, 2, 3)
-            assertThat(channel!!.tryReceive().isClosed).isTrue()
+            // tryReceive는 기다리지 않고 지금 채널 상태만 확인한다. 닫힌 채널이면 isClosed가 true다.
+            assertThat(channel!!.tryReceive().isClosed)
+                .describedAs("값을 다 보낸 생산자는 채널을 닫아야 한다")
+                .isTrue()
             assertThat(events).containsExactly("producer:start", "sent:1", "sent:2", "sent:3", "producer:finally")
 
             events.clear()
