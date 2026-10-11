@@ -5,7 +5,7 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.yield
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -28,6 +28,7 @@ class Stage1Test {
             val callerDispatcher = coroutineContext[ContinuationInterceptor]
             val events = mutableListOf("caller:before")
             Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { worker ->
+                // 1) 블록 안은 worker에서 실행되고, 끝나면 호출자로 복귀한다.
                 val workerThread =
                     onDispatcher(worker) {
                         val firstThread = Thread.currentThread().threadId()
@@ -44,17 +45,29 @@ class Stage1Test {
 
                 assertThat(events).containsExactly("caller:before", "caller:after")
 
+                // 2) worker에서 기다리는 동안 호출자는 다른 코루틴을 실행할 수 있다.
+                // CompletableDeferred는 코루틴 없이 complete할 수 있는 Deferred이며, 여기서는 sibling의 실행 신호다.
                 val callerContinued = CompletableDeferred<Unit>()
                 val sibling =
                     launch {
                         events += "caller:continued"
                         callerContinued.complete(Unit)
                     }
-                // worker에서 기다려도 호출자의 다른 작업은 진행돼야 한다. 실제 thread 대기는 5초로 제한한다.
-                onDispatcher(worker) { withTimeout(5_000) { callerContinued.await() } }
+                // worker에서 신호를 기다리는 실제 시간은 5초로 제한한다.
+                val progressed =
+                    onDispatcher(worker) {
+                        withTimeoutOrNull(5_000) {
+                            callerContinued.await()
+                            true
+                        }
+                    }
+                assertThat(progressed)
+                    .describedAs("worker가 기다리는 동안 호출자의 다른 코루틴도 진행돼야 한다. 호출자 스레드를 막고 있지 않은지 확인하자")
+                    .isTrue()
                 sibling.join()
                 assertThat(events).contains("caller:continued")
 
+                // 3) 블록 안의 실패도 호출자에게 전달되고 호출자 context로 복귀한다.
                 val failure = runCatching { onDispatcher(worker) { error("worker failed") } }.exceptionOrNull()
                 assertThat(failure).isInstanceOf(IllegalStateException::class.java).hasMessage("worker failed")
                 assertThat(Thread.currentThread().threadId()).isEqualTo(callerThread)
