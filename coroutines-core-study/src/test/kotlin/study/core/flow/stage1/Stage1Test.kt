@@ -1,7 +1,9 @@
 package study.core.flow.stage1
 
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -39,8 +41,10 @@ class Stage1Test {
 
             val result = selectedNumbers(source).toList()
 
-            assertThat(result).containsExactly(4, 8)
-            assertThat(events).containsExactly("emit:1", "emit:2", "emit:3", "emit:4", "upstream:finally")
+            assertThat(result).describedAs("변환한 4의 배수 두 개만 내보내야 한다").containsExactly(4, 8)
+            assertThat(events)
+                .describedAs("필요한 두 값을 내보낸 뒤에는 upstream 생산을 멈추고 finally를 실행해야 한다")
+                .containsExactly("emit:1", "emit:2", "emit:3", "emit:4", "upstream:finally")
             assertThat(currentTime).isEqualTo(40L)
 
             events.clear()
@@ -53,7 +57,10 @@ class Stage1Test {
                     }
                 }
             val failure = runCatching { selectedNumbers(failedSource).toList() }.exceptionOrNull()
-            assertThat(failure).isInstanceOf(IllegalStateException::class.java).hasMessage("source failed")
+            assertThat(failure)
+                .describedAs("source의 일반 실패를 정상 값으로 바꾸지 않고 전달해야 한다")
+                .isInstanceOf(IllegalStateException::class.java)
+                .hasMessage("source failed")
             assertThat(events).containsExactly("failed:finally")
 
             events.clear()
@@ -69,6 +76,7 @@ class Stage1Test {
             val timedOut = withTimeoutOrNull(100) { selectedNumbers(slowSource).toList() }
             assertThat(timedOut).isNull()
             assertThat(events).containsExactly("cancelled:finally")
+            // currentTime은 앞 단계에서 흐른 시간까지 runTest 전체에서 누적된다.
             assertThat(currentTime).isEqualTo(140L)
         }
 
@@ -98,15 +106,23 @@ class Stage1Test {
                 }
             val collected = mutableListOf<Int>()
 
-            upstreamOn(source, upstreamDispatcher).collect { number ->
-                collectorContexts += currentCoroutineContext()[ContinuationInterceptor]
-                events += "collect:$number"
-                collected += number
-            }
+            val collectionFailure =
+                runCatching {
+                    upstreamOn(source, upstreamDispatcher).collect { number ->
+                        collectorContexts += currentCoroutineContext()[ContinuationInterceptor]
+                        events += "collect:$number"
+                        collected += number
+                    }
+                }.exceptionOrNull()
+            assertThat(collectionFailure)
+                .describedAs("upstream을 옮겨도 collector의 context에서 값을 전달해야 한다")
+                .isNull()
 
             assertThat(collected).containsExactly(1, 2)
             assertThat(upstreamDispatcher).isNotSameAs(collectorDispatcher)
-            assertThat(upstreamContexts).containsExactly(upstreamDispatcher, upstreamDispatcher)
+            assertThat(upstreamContexts)
+                .describedAs("upstream은 전달받은 dispatcher에서 실행되어야 한다")
+                .containsExactly(upstreamDispatcher, upstreamDispatcher)
             assertThat(collectorContexts).containsExactly(collectorDispatcher, collectorDispatcher)
             assertThat(events).contains("emit:1", "emit:2", "collect:1", "collect:2")
             // flowOn은 버퍼를 사용할 수 있으므로 emit과 collect의 교대 순서는 단언하지 않는다.
@@ -114,6 +130,28 @@ class Stage1Test {
                 runCatching {
                     upstreamOn(flow<Int> { error("upstream failed") }, upstreamDispatcher).toList()
                 }.exceptionOrNull()
-            assertThat(failure).isInstanceOf(IllegalStateException::class.java).hasMessage("upstream failed")
+            assertThat(failure)
+                .describedAs("upstream의 일반 실패를 수집자에게 전달해야 한다")
+                .isInstanceOf(IllegalStateException::class.java)
+                .hasMessage("upstream failed")
+
+            // 생산이 끝나지 않은 흐름에서도 첫 값을 받으면 수집과 upstream 정리가 끝나야 한다.
+            events.clear()
+            val ongoingSource =
+                flow {
+                    try {
+                        emit(1)
+                        awaitCancellation()
+                    } finally {
+                        events += "upstream:finally"
+                    }
+                }
+            val first = withTimeoutOrNull(100) { upstreamOn(ongoingSource, upstreamDispatcher).first() }
+            assertThat(first)
+                .describedAs("upstream 전체가 끝날 때까지 모으지 않고 첫 값을 전달해야 한다")
+                .isEqualTo(1)
+            assertThat(events)
+                .describedAs("첫 값을 받은 수집자가 끝나면 아직 실행 중인 upstream도 정리되어야 한다")
+                .containsExactly("upstream:finally")
         }
 }
