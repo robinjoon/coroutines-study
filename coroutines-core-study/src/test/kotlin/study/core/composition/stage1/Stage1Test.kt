@@ -12,10 +12,10 @@ class Stage1Test {
      * async는 결과를 가진 자식 코루틴을 만들고 await는 그 결과를 기다린다.
      * 두 async를 먼저 만들면 독립적인 두 작업의 대기 시간을 겹칠 수 있다.
      * 같은 scope에 속한 자식은 다른 자식의 실패나 부모 취소 때 함께 정리된다.
-     * withTimeoutOrNull은 자기 시간 제한이 만료되면 블록을 취소하고 null을 반환한다. 자세한 동작은 cancellation 단원에서 다룬다.
+     * withTimeoutOrNull은 자기가 건 시간 제한이 만료되면 블록을 취소하고 null을 반환한다. 자세한 동작은 cancellation 단원에서 다룬다.
      * [공식 문서](https://kotlinlang.org/docs/composing-suspending-functions.html#structured-concurrency-with-async)
      * 관찰 지점: 완료 전에 두 시작 사건이 있는지, 결과 합계와 가상 시간, 실패·timeout 후 정리를 확인하라.
-     * 작업은 async를 호출할 때 시작될까, await를 호출할 때 시작될까? 그 차이가 가상 시간 결과와 어떻게 이어질까?
+     * await 전에 두 작업을 실행 대기열에 올리면 가상 시간은 어떻게 달라질까?
      */
     @Test
     fun asyncStartsBothTasksBeforeAwaiting() =

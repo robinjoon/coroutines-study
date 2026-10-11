@@ -34,7 +34,9 @@ class Stage1Test {
                         val firstThread = Thread.currentThread().threadId()
                         assertThat(currentCoroutineContext()[ContinuationInterceptor]).isSameAs(worker)
                         yield()
-                        assertThat(Thread.currentThread().threadId()).isEqualTo(firstThread)
+                        assertThat(Thread.currentThread().threadId())
+                            .describedAs("단일 worker에서 시작하고 yield 뒤에도 같은 worker 스레드여야 한다")
+                            .isEqualTo(firstThread)
                         firstThread
                     }
                 events += "caller:after"
