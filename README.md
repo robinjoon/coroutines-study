@@ -95,6 +95,10 @@ Kotlin 코루틴을 **Spring Boot MVC 백엔드**에서 제대로 쓰기 위한 
 
 # 모듈 전체
 ./gradlew :coroutines-core-study:test
+
+# 코드 스타일 검사(ktlint) / 자동 정리
+./gradlew ktlintCheck
+./gradlew ktlintFormat
 ```
 
 서로 다른 패키지에 같은 이름의 `Stage0Test`가 있으므로 패키지까지 적어 주세요.
