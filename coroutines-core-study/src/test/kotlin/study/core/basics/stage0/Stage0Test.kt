@@ -17,22 +17,24 @@ class Stage0Test {
      * 중단할 수 있는 함수인데도 순서가 바뀌지 않은 이유는 무엇일까?
      */
     @Test
-    fun suspendDoesNotStartAnotherCoroutine() = runTest {
-        val events = mutableListOf<String>()
-        suspend fun greet(name: String) {
-            events += "$name:start"
-            delay(100)
-            events += "$name:end"
+    fun suspendDoesNotStartAnotherCoroutine() =
+        runTest {
+            val events = mutableListOf<String>()
+
+            suspend fun greet(name: String) {
+                events += "$name:start"
+                delay(100)
+                events += "$name:end"
+            }
+
+            greet("first")
+            greet("second")
+
+            // TODO(a): events에 기록된 호출 순서에 맞게 기대값을 바꿔 보자.
+            assertThat(events).containsExactly("")
+            // TODO(a): 두 번의 delay를 지난 가상 시간은 얼마일까?
+            assertThat(currentTime).isEqualTo(-1L)
         }
-
-        greet("first")
-        greet("second")
-
-        // TODO(a): events에 기록된 호출 순서에 맞게 기대값을 바꿔 보자.
-        assertThat(events).containsExactly("")
-        // TODO(a): 두 번의 delay를 지난 가상 시간은 얼마일까?
-        assertThat(currentTime).isEqualTo(-1L)
-    }
 
     /**
      * launch는 자식 코루틴을 만들고, 그 코루틴의 손잡이인 Job을 즉시 반환한다.
@@ -45,21 +47,23 @@ class Stage0Test {
      * 코루틴을 만들었는데 첫 사건이 아직 기록되지 않은 이유는 무엇일까?
      */
     @Test
-    fun launchStartsWhenSchedulerRuns() = runTest {
-        val events = mutableListOf("parent")
-        val job = launch {
-            events += "child:start"
-            delay(100)
-            events += "child:end"
-        }
-        val justLaunched = events.toList()
-        runCurrent()
-        val afterRunCurrent = events.toList()
-        job.join()
+    fun launchStartsWhenSchedulerRuns() =
+        runTest {
+            val events = mutableListOf("parent")
+            val job =
+                launch {
+                    events += "child:start"
+                    delay(100)
+                    events += "child:end"
+                }
+            val justLaunched = events.toList()
+            runCurrent()
+            val afterRunCurrent = events.toList()
+            job.join()
 
-        // TODO(a): 세 시점에 실제로 실행된 부분을 구분해서 기대값을 채워 보자.
-        assertThat(justLaunched).containsExactly("")
-        assertThat(afterRunCurrent).containsExactly("")
-        assertThat(events).containsExactly("")
-    }
+            // TODO(a): 세 시점에 실제로 실행된 부분을 구분해서 기대값을 채워 보자.
+            assertThat(justLaunched).containsExactly("")
+            assertThat(afterRunCurrent).containsExactly("")
+            assertThat(events).containsExactly("")
+        }
 }

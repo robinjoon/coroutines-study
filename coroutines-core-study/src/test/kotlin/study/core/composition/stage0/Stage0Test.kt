@@ -15,19 +15,24 @@ class Stage0Test {
      * suspend를 두 번 호출했는데 시간이 겹치지 않은 이유는 무엇일까?
      */
     @Test
-    fun sequentialCallsAccumulateVirtualDelay() = runTest {
-        val events = mutableListOf<String>()
-        suspend fun useful(name: String, value: Int): Int {
-            events += "$name:start"
-            delay(100)
-            events += "$name:end"
-            return value
-        }
-        val result = useful("first", 10) + useful("second", 20)
+    fun sequentialCallsAccumulateVirtualDelay() =
+        runTest {
+            val events = mutableListOf<String>()
 
-        assertThat(result).isEqualTo(30)
-        // TODO(a): 순차 호출의 사건 순서와 가상 경과 시간에 맞게 고쳐 보자.
-        assertThat(events).containsExactly("")
-        assertThat(currentTime).isEqualTo(-1L)
-    }
+            suspend fun useful(
+                name: String,
+                value: Int,
+            ): Int {
+                events += "$name:start"
+                delay(100)
+                events += "$name:end"
+                return value
+            }
+            val result = useful("first", 10) + useful("second", 20)
+
+            assertThat(result).isEqualTo(30)
+            // TODO(a): 순차 호출의 사건 순서와 가상 경과 시간에 맞게 고쳐 보자.
+            assertThat(events).containsExactly("")
+            assertThat(currentTime).isEqualTo(-1L)
+        }
 }

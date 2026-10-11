@@ -20,7 +20,6 @@ import java.util.concurrent.Executors
  * - [Dispatchers.IO](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html)
  */
 class Stage0Test {
-
     /**
      * JDBC 조회를 흉내 내는 두 저장소가 있다.
      * - [BlockingProductRepository]: suspend 함수지만 내부에서 `Thread.sleep`으로 스레드를 붙잡는다(JDBC와 같다).
@@ -54,7 +53,9 @@ class Stage0Test {
     }
 }
 
-class BlockingProductRepository(private val events: MutableList<String>) {
+class BlockingProductRepository(
+    private val events: MutableList<String>,
+) {
     suspend fun findName(name: String) {
         events += "$name 조회 시작"
         Thread.sleep(100) // JDBC 호출처럼 스레드를 붙잡고 기다린다.
@@ -62,7 +63,9 @@ class BlockingProductRepository(private val events: MutableList<String>) {
     }
 }
 
-class SuspendingProductRepository(private val events: MutableList<String>) {
+class SuspendingProductRepository(
+    private val events: MutableList<String>,
+) {
     suspend fun findName(name: String) {
         events += "$name 조회 시작"
         delay(100) // 기다리는 동안 스레드를 양보한다.

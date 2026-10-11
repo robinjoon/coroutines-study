@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger
     properties = ["spring.datasource.url=jdbc:h2:mem:blockingio-stage1;DB_CLOSE_DELAY=-1"],
 )
 class Stage1Test {
-
     @Autowired
     private lateinit var jdbcTemplate: JdbcTemplate
 
@@ -80,11 +79,12 @@ class Stage1Test {
         val callerThreadIsFree = CountDownLatch(1)
         dao.waitBeforeQuery = callerThreadIsFree
 
-        val name = onRequestThread {
-            val lookup = async { repository.findName(1) }
-            launch { callerThreadIsFree.countDown() }
-            lookup.await()
-        }
+        val name =
+            onRequestThread {
+                val lookup = async { repository.findName(1) }
+                launch { callerThreadIsFree.countDown() }
+                lookup.await()
+            }
 
         assertThat(name).isEqualTo("keyboard")
         assertThat(dao.calledThreadNames).hasSize(1).allMatch { it.startsWith("jdbc-") }
@@ -100,29 +100,30 @@ class Stage1Test {
      * 왜 그런 결과가 나왔을까? `limitedParallelism(2)` 디스패처로도 같은 결과가 나올까? (힌트: delay 중인 코루틴은 스레드를 점유하지 않는다)
      */
     @Test
-    fun databaseBulkheadCapsActiveCalls() = runTest {
-        val slowDao = SlowProductDao()
-        val bulkhead = BulkheadProductRepository(slowDao, maxConcurrentCalls = 2)
+    fun databaseBulkheadCapsActiveCalls() =
+        runTest {
+            val slowDao = SlowProductDao()
+            val bulkhead = BulkheadProductRepository(slowDao, maxConcurrentCalls = 2)
 
-        val names = (1L..5L).map { id -> async { bulkhead.findName(id) } }.awaitAll()
+            val names = (1L..5L).map { id -> async { bulkhead.findName(id) } }.awaitAll()
 
-        assertThat(names).containsExactly("product-1", "product-2", "product-3", "product-4", "product-5")
-        assertThat(slowDao.maxActive).isEqualTo(2)
-        assertThat(currentTime).isEqualTo(300)
+            assertThat(names).containsExactly("product-1", "product-2", "product-3", "product-4", "product-5")
+            assertThat(slowDao.maxActive).isEqualTo(2)
+            assertThat(currentTime).isEqualTo(300)
 
-        // 실패한 호출도 자리를 반납해야 한다. 반납하지 않으면 실패가 두 번 난 뒤로는 아무도 DB에 들어가지 못한다.
-        val flakyBulkhead = BulkheadProductRepository(SlowProductDao(failingIds = setOf(1L, 2L)), maxConcurrentCalls = 2)
-        assertThat(runCatching { flakyBulkhead.findName(1) }.isFailure).isTrue()
-        assertThat(runCatching { flakyBulkhead.findName(2) }.isFailure).isTrue()
-        assertThat(withTimeout(1_000) { flakyBulkhead.findName(3) }).isEqualTo("product-3")
+            // 실패한 호출도 자리를 반납해야 한다. 반납하지 않으면 실패가 두 번 난 뒤로는 아무도 DB에 들어가지 못한다.
+            val flakyBulkhead = BulkheadProductRepository(SlowProductDao(failingIds = setOf(1L, 2L)), maxConcurrentCalls = 2)
+            assertThat(runCatching { flakyBulkhead.findName(1) }.isFailure).isTrue()
+            assertThat(runCatching { flakyBulkhead.findName(2) }.isFailure).isTrue()
+            assertThat(withTimeout(1_000) { flakyBulkhead.findName(3) }).isEqualTo("product-3")
 
-        // 취소된 호출도 자리를 반납해야 한다.
-        val cancelledBulkhead = BulkheadProductRepository(SlowProductDao(), maxConcurrentCalls = 2)
-        val inFlight = (1L..2L).map { id -> launch { cancelledBulkhead.findName(id) } }
-        runCurrent()
-        inFlight.forEach { it.cancelAndJoin() }
-        assertThat(withTimeout(1_000) { cancelledBulkhead.findName(3) }).isEqualTo("product-3")
-    }
+            // 취소된 호출도 자리를 반납해야 한다.
+            val cancelledBulkhead = BulkheadProductRepository(SlowProductDao(), maxConcurrentCalls = 2)
+            val inFlight = (1L..2L).map { id -> launch { cancelledBulkhead.findName(id) } }
+            runCurrent()
+            inFlight.forEach { it.cancelAndJoin() }
+            assertThat(withTimeout(1_000) { cancelledBulkhead.findName(3) }).isEqualTo("product-3")
+        }
 
     private fun <T> onRequestThread(block: suspend CoroutineScope.() -> T): T =
         Executors.newSingleThreadExecutor { Thread(it, "request-thread") }.asCoroutineDispatcher().use { requestThread ->
@@ -135,7 +136,8 @@ class Stage1Test {
         @Bean(destroyMethod = "close")
         fun jdbcDispatcher(): ExecutorCoroutineDispatcher {
             val sequence = AtomicInteger()
-            return Executors.newFixedThreadPool(2) { Thread(it, "jdbc-${sequence.incrementAndGet()}") }
+            return Executors
+                .newFixedThreadPool(2) { Thread(it, "jdbc-${sequence.incrementAndGet()}") }
                 .asCoroutineDispatcher()
         }
 
@@ -143,7 +145,9 @@ class Stage1Test {
         fun productJdbcDao(jdbcTemplate: JdbcTemplate) = ProductJdbcDao(jdbcTemplate)
 
         @Bean
-        fun productRepository(dao: ProductJdbcDao, @Qualifier("jdbcDispatcher") jdbcDispatcher: CoroutineDispatcher) =
-            ProductRepository(dao, jdbcDispatcher)
+        fun productRepository(
+            dao: ProductJdbcDao,
+            @Qualifier("jdbcDispatcher") jdbcDispatcher: CoroutineDispatcher,
+        ) = ProductRepository(dao, jdbcDispatcher)
     }
 }

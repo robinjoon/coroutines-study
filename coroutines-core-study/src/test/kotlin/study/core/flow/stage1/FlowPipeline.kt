@@ -8,7 +8,10 @@ fun selectedNumbers(source: Flow<Int>): Flow<Int> {
     TODO("map, filter, take로 필요한 값만 생산하는 파이프라인을 구성하세요")
 }
 
-fun upstreamOn(source: Flow<Int>, dispatcher: CoroutineDispatcher): Flow<Int> {
+fun upstreamOn(
+    source: Flow<Int>,
+    dispatcher: CoroutineDispatcher,
+): Flow<Int> {
     // TODO(b): collector의 context를 바꾸지 않고 upstream에 dispatcher를 적용한다.
     TODO("flowOn으로 생산 구간의 context를 지정하세요")
 }

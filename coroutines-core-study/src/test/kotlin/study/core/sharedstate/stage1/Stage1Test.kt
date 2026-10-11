@@ -18,25 +18,26 @@ class Stage1Test {
      * 읽기와 쓰기 각각에만 잠금을 걸면 같은 보호 효과를 얻을 수 있을까?
      */
     @Test
-    fun mutexProtectsWholeReadModifyWrite() = runTest {
-        val counter = ProtectedCounter()
-        coroutineScope {
-            repeat(100) { launch { counter.increment() } }
+    fun mutexProtectsWholeReadModifyWrite() =
+        runTest {
+            val counter = ProtectedCounter()
+            coroutineScope {
+                repeat(100) { launch { counter.increment() } }
+            }
+
+            assertThat(counter.value).isEqualTo(100)
+            assertThat(counter.maxActive).isEqualTo(1)
+            assertThat(counter.active).isEqualTo(0)
+
+            val cancelledCounter = ProtectedCounter()
+            val child = launch(start = CoroutineStart.UNDISPATCHED) { cancelledCounter.increment() }
+            assertThat(cancelledCounter.active).isEqualTo(1)
+            child.cancelAndJoin()
+            assertThat(cancelledCounter.active).isEqualTo(0)
+            assertThat(cancelledCounter.value).isEqualTo(0)
+
+            cancelledCounter.increment()
+            assertThat(cancelledCounter.value).isEqualTo(1)
+            assertThat(cancelledCounter.maxActive).isEqualTo(1)
         }
-
-        assertThat(counter.value).isEqualTo(100)
-        assertThat(counter.maxActive).isEqualTo(1)
-        assertThat(counter.active).isEqualTo(0)
-
-        val cancelledCounter = ProtectedCounter()
-        val child = launch(start = CoroutineStart.UNDISPATCHED) { cancelledCounter.increment() }
-        assertThat(cancelledCounter.active).isEqualTo(1)
-        child.cancelAndJoin()
-        assertThat(cancelledCounter.active).isEqualTo(0)
-        assertThat(cancelledCounter.value).isEqualTo(0)
-
-        cancelledCounter.increment()
-        assertThat(cancelledCounter.value).isEqualTo(1)
-        assertThat(cancelledCounter.maxActive).isEqualTo(1)
-    }
 }

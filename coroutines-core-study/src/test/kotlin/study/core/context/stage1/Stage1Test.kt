@@ -1,6 +1,5 @@
 package study.core.context.stage1
 
-import java.util.concurrent.Executors
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.currentCoroutineContext
@@ -10,6 +9,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.yield
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.util.concurrent.Executors
 import kotlin.coroutines.ContinuationInterceptor
 
 class Stage1Test {
@@ -22,40 +22,43 @@ class Stage1Test {
      * 선택한 블록이 끝난 뒤 호출자의 thread에서 다시 실행되는 이유는 무엇일까?
      */
     @Test
-    fun withContextMovesOnlySelectedBlock() = runTest {
-        val callerThread = Thread.currentThread().threadId()
-        val callerDispatcher = coroutineContext[ContinuationInterceptor]
-        val events = mutableListOf("caller:before")
-        Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { worker ->
-            val workerThread = onDispatcher(worker) {
-                val firstThread = Thread.currentThread().threadId()
-                assertThat(currentCoroutineContext()[ContinuationInterceptor]).isSameAs(worker)
-                yield()
-                assertThat(Thread.currentThread().threadId()).isEqualTo(firstThread)
-                firstThread
+    fun withContextMovesOnlySelectedBlock() =
+        runTest {
+            val callerThread = Thread.currentThread().threadId()
+            val callerDispatcher = coroutineContext[ContinuationInterceptor]
+            val events = mutableListOf("caller:before")
+            Executors.newSingleThreadExecutor().asCoroutineDispatcher().use { worker ->
+                val workerThread =
+                    onDispatcher(worker) {
+                        val firstThread = Thread.currentThread().threadId()
+                        assertThat(currentCoroutineContext()[ContinuationInterceptor]).isSameAs(worker)
+                        yield()
+                        assertThat(Thread.currentThread().threadId()).isEqualTo(firstThread)
+                        firstThread
+                    }
+                events += "caller:after"
+
+                assertThat(workerThread).isNotEqualTo(callerThread)
+                assertThat(Thread.currentThread().threadId()).isEqualTo(callerThread)
+                assertThat(currentCoroutineContext()[ContinuationInterceptor]).isSameAs(callerDispatcher)
+
+                assertThat(events).containsExactly("caller:before", "caller:after")
+
+                val callerContinued = CompletableDeferred<Unit>()
+                val sibling =
+                    launch {
+                        events += "caller:continued"
+                        callerContinued.complete(Unit)
+                    }
+                // worker에서 기다려도 호출자의 다른 작업은 진행돼야 한다. 실제 thread 대기는 5초로 제한한다.
+                onDispatcher(worker) { withTimeout(5_000) { callerContinued.await() } }
+                sibling.join()
+                assertThat(events).contains("caller:continued")
+
+                val failure = runCatching { onDispatcher(worker) { error("worker failed") } }.exceptionOrNull()
+                assertThat(failure).isInstanceOf(IllegalStateException::class.java).hasMessage("worker failed")
+                assertThat(Thread.currentThread().threadId()).isEqualTo(callerThread)
+                assertThat(currentCoroutineContext()[ContinuationInterceptor]).isSameAs(callerDispatcher)
             }
-            events += "caller:after"
-
-            assertThat(workerThread).isNotEqualTo(callerThread)
-            assertThat(Thread.currentThread().threadId()).isEqualTo(callerThread)
-            assertThat(currentCoroutineContext()[ContinuationInterceptor]).isSameAs(callerDispatcher)
-
-            assertThat(events).containsExactly("caller:before", "caller:after")
-
-            val callerContinued = CompletableDeferred<Unit>()
-            val sibling = launch {
-                events += "caller:continued"
-                callerContinued.complete(Unit)
-            }
-            // worker에서 기다려도 호출자의 다른 작업은 진행돼야 한다. 실제 thread 대기는 5초로 제한한다.
-            onDispatcher(worker) { withTimeout(5_000) { callerContinued.await() } }
-            sibling.join()
-            assertThat(events).contains("caller:continued")
-
-            val failure = runCatching { onDispatcher(worker) { error("worker failed") } }.exceptionOrNull()
-            assertThat(failure).isInstanceOf(IllegalStateException::class.java).hasMessage("worker failed")
-            assertThat(Thread.currentThread().threadId()).isEqualTo(callerThread)
-            assertThat(currentCoroutineContext()[ContinuationInterceptor]).isSameAs(callerDispatcher)
         }
-    }
 }

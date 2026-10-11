@@ -17,23 +17,24 @@ class Stage0Test {
      * 증가를 두 번 시도했는데 한 번의 갱신이 사라지는 이유는 무엇일까?
      */
     @Test
-    fun splitReadYieldWriteLosesAnUpdate() = runTest {
-        val events = mutableListOf<String>()
-        var counter = 0
-        coroutineScope {
-            repeat(2) { participant ->
-                launch {
-                    val before = counter
-                    events += "$participant:read:$before"
-                    yield()
-                    counter = before + 1
-                    events += "$participant:write:$counter"
+    fun splitReadYieldWriteLosesAnUpdate() =
+        runTest {
+            val events = mutableListOf<String>()
+            var counter = 0
+            coroutineScope {
+                repeat(2) { participant ->
+                    launch {
+                        val before = counter
+                        events += "$participant:read:$before"
+                        yield()
+                        counter = before + 1
+                        events += "$participant:write:$counter"
+                    }
                 }
             }
-        }
 
-        // TODO(a): 명시적 중단 지점이 있는 read → write의 결과를 관찰하자.
-        assertThat(counter).isEqualTo(-1)
-        assertThat(events).containsExactly("")
-    }
+            // TODO(a): 명시적 중단 지점이 있는 read → write의 결과를 관찰하자.
+            assertThat(counter).isEqualTo(-1)
+            assertThat(events).containsExactly("")
+        }
 }

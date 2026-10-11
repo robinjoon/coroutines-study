@@ -12,7 +12,9 @@ import java.util.concurrent.TimeUnit
  * 블로킹 JDBC DAO. 완성되어 있으니 수정하지 않는다.
  * 어느 스레드에서 호출되었는지 기록한다.
  */
-class ProductJdbcDao(private val jdbcTemplate: JdbcTemplate) {
+class ProductJdbcDao(
+    private val jdbcTemplate: JdbcTemplate,
+) {
     val calledThreadNames = CopyOnWriteArrayList<String>()
 
     /** 테스트가 설정하면, 조회 전에 이 신호가 올 때까지(최대 2초) 기다린다. */
@@ -45,7 +47,9 @@ class ProductRepository(
  * 느린 외부 저장소를 흉내 내는 DAO. 완성되어 있으니 수정하지 않는다.
  * 동시에 몇 개의 호출이 진행 중인지(active)와 그 최댓값(maxActive)을 기록한다.
  */
-class SlowProductDao(private val failingIds: Set<Long> = emptySet()) {
+class SlowProductDao(
+    private val failingIds: Set<Long> = emptySet(),
+) {
     var active = 0
         private set
     var maxActive = 0

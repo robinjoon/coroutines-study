@@ -21,7 +21,6 @@ import java.util.concurrent.Executors
  * - [MDCContext](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-slf4j/kotlinx.coroutines.slf4j/-m-d-c-context/)
  */
 class Stage1Test {
-
     private val executor = Executors.newSingleThreadExecutor { Thread(it, "worker") }
     private val worker = executor.asCoroutineDispatcher()
 
@@ -47,11 +46,12 @@ class Stage1Test {
         val runner = RequestContextRunner(worker)
 
         // A가 멈춘 사이 B가 시작되고, B가 아직 끝나지 않았을 때 A가 먼저 재개된다.
-        val (a, b) = runBlocking {
-            val a = async { runner.runWithRequestId("req-A") { observe(delayMillis = 50) } }
-            val b = async { runner.runWithRequestId("req-B") { observe(delayMillis = 100) } }
-            a.await() to b.await()
-        }
+        val (a, b) =
+            runBlocking {
+                val a = async { runner.runWithRequestId("req-A") { observe(delayMillis = 50) } }
+                val b = async { runner.runWithRequestId("req-B") { observe(delayMillis = 100) } }
+                a.await() to b.await()
+            }
 
         assertThat(a).isEqualTo(Observation("worker", "req-A", "req-A"))
         assertThat(b).isEqualTo(Observation("worker", "req-B", "req-B"))
@@ -59,7 +59,11 @@ class Stage1Test {
         assertThat(MDC.get("requestId")).isNull()
     }
 
-    private data class Observation(val thread: String, val beforeDelay: String?, val afterDelay: String?)
+    private data class Observation(
+        val thread: String,
+        val beforeDelay: String?,
+        val afterDelay: String?,
+    )
 
     private suspend fun observe(delayMillis: Long): Observation {
         val before = MDC.get("requestId")

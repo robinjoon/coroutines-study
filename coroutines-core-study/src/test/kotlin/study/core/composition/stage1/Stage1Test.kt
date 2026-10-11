@@ -17,42 +17,73 @@ class Stage1Test {
      * await를 호출하는 순서와 작업이 시작하는 순서가 다른 이유는 무엇일까?
      */
     @Test
-    fun asyncStartsBothTasksBeforeAwaiting() = runTest {
-        val events = mutableListOf<String>()
-        suspend fun useful(name: String, value: Int): Int {
-            events += "$name:start"
-            delay(100)
-            assertThat(events).contains("first:start", "second:start")
-            events += "$name:end"
-            return value
+    fun asyncStartsBothTasksBeforeAwaiting() =
+        runTest {
+            val events = mutableListOf<String>()
+
+            suspend fun useful(
+                name: String,
+                value: Int,
+            ): Int {
+                events += "$name:start"
+                delay(100)
+                assertThat(events).contains("first:start", "second:start")
+                events += "$name:end"
+                return value
+            }
+
+            val result = concurrentSum({ useful("first", 10) }, { useful("second", 20) })
+
+            assertThat(result).isEqualTo(30)
+            assertThat(currentTime).isEqualTo(100L)
+            assertThat(events.take(2)).containsExactlyInAnyOrder("first:start", "second:start")
+
+            events.clear()
+            val failure =
+                runCatching {
+                    concurrentSum(
+                        {
+                            delay(10)
+                            error("first failed")
+                        },
+                        {
+                            try {
+                                delay(1_000)
+                                20
+                            } finally {
+                                events += "second:finally"
+                            }
+                        },
+                    )
+                }.exceptionOrNull()
+            assertThat(failure).isInstanceOf(IllegalStateException::class.java).hasMessage("first failed")
+            assertThat(events).containsExactly("second:finally")
+            assertThat(currentTime).isEqualTo(110L)
+
+            events.clear()
+            val timedOut =
+                withTimeoutOrNull(50) {
+                    concurrentSum(
+                        {
+                            try {
+                                delay(1_000)
+                                10
+                            } finally {
+                                events += "first:finally"
+                            }
+                        },
+                        {
+                            try {
+                                delay(1_000)
+                                20
+                            } finally {
+                                events += "second:finally"
+                            }
+                        },
+                    )
+                }
+            assertThat(timedOut).isNull()
+            assertThat(events).containsExactlyInAnyOrder("first:finally", "second:finally")
+            assertThat(currentTime).isEqualTo(160L)
         }
-
-        val result = concurrentSum({ useful("first", 10) }, { useful("second", 20) })
-
-        assertThat(result).isEqualTo(30)
-        assertThat(currentTime).isEqualTo(100L)
-        assertThat(events.take(2)).containsExactlyInAnyOrder("first:start", "second:start")
-
-        events.clear()
-        val failure = runCatching {
-            concurrentSum(
-                { delay(10); error("first failed") },
-                { try { delay(1_000); 20 } finally { events += "second:finally" } },
-            )
-        }.exceptionOrNull()
-        assertThat(failure).isInstanceOf(IllegalStateException::class.java).hasMessage("first failed")
-        assertThat(events).containsExactly("second:finally")
-        assertThat(currentTime).isEqualTo(110L)
-
-        events.clear()
-        val timedOut = withTimeoutOrNull(50) {
-            concurrentSum(
-                { try { delay(1_000); 10 } finally { events += "first:finally" } },
-                { try { delay(1_000); 20 } finally { events += "second:finally" } },
-            )
-        }
-        assertThat(timedOut).isNull()
-        assertThat(events).containsExactlyInAnyOrder("first:finally", "second:finally")
-        assertThat(currentTime).isEqualTo(160L)
-    }
 }

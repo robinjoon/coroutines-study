@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test
  * - [runTest와 가상 시간](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-test/)
  */
 class Stage0Test {
-
     /**
      * suspend 함수를 차례로 호출하면 코루틴 안에서도 "순서대로" 실행된다. 코루틴이라고 저절로 병렬이 되지는 않는다.
      * runTest의 `currentTime`은 가상 시계다. delay(100)은 실제로 기다리지 않고 가상 시계만 100ms 앞으로 보낸다.
@@ -22,22 +21,29 @@ class Stage0Test {
      * 왜 그런 결과가 나왔을까? 가격과 재고는 서로 의존하지 않는데, 시간을 줄이려면 무엇이 필요할까?
      */
     @Test
-    fun sequentialAggregationAccumulatesDelay() = runTest {
-        val events = mutableListOf<String>()
-        val service = SequentialProductSummaryService(FakePriceClient(events), FakeStockClient(events))
+    fun sequentialAggregationAccumulatesDelay() =
+        runTest {
+            val events = mutableListOf<String>()
+            val service = SequentialProductSummaryService(FakePriceClient(events), FakeStockClient(events))
 
-        val summary = service.summary(1)
+            val summary = service.summary(1)
 
-        assertThat(summary).isEqualTo(ProductSummary(id = 1, price = 10_000, stock = 7))
-        // TODO(a): 호출 순서와 가상 경과 시간을 관찰하고 기대값을 고치자.
-        assertThat(events).containsExactly("")
-        assertThat(currentTime).isEqualTo(-1)
-    }
+            assertThat(summary).isEqualTo(ProductSummary(id = 1, price = 10_000, stock = 7))
+            // TODO(a): 호출 순서와 가상 경과 시간을 관찰하고 기대값을 고치자.
+            assertThat(events).containsExactly("")
+            assertThat(currentTime).isEqualTo(-1)
+        }
 }
 
-data class ProductSummary(val id: Long, val price: Int, val stock: Int?)
+data class ProductSummary(
+    val id: Long,
+    val price: Int,
+    val stock: Int?,
+)
 
-class FakePriceClient(private val events: MutableList<String>) {
+class FakePriceClient(
+    private val events: MutableList<String>,
+) {
     suspend fun price(id: Long): Int {
         events += "price:start"
         delay(100)
@@ -46,7 +52,9 @@ class FakePriceClient(private val events: MutableList<String>) {
     }
 }
 
-class FakeStockClient(private val events: MutableList<String>) {
+class FakeStockClient(
+    private val events: MutableList<String>,
+) {
     suspend fun stock(id: Long): Int {
         events += "stock:start"
         delay(100)

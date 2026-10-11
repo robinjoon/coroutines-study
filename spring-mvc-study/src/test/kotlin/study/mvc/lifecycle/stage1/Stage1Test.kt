@@ -25,7 +25,6 @@ import java.util.concurrent.CopyOnWriteArrayList
  * - [공식 가이드(CoroutineExceptionHandler)](https://kotlinlang.org/docs/exception-handling.html#coroutineexceptionhandler)
  */
 class Stage1Test {
-
     /**
      * 알림 두 개를 보낸다. 하나는 곧바로 실패하고, 하나는 오래 걸린다.
      * - 실패는 failures에 한 번 기록되어야 한다.
@@ -47,14 +46,15 @@ class Stage1Test {
             val longRunningStarted = CompletableDeferred<Unit>()
 
             val failing = sender.sendLater { throw IllegalStateException("메일 서버 오류") }
-            val longRunning = sender.sendLater {
-                try {
-                    longRunningStarted.complete(Unit)
-                    awaitCancellation()
-                } finally {
-                    events += "long-running finally"
+            val longRunning =
+                sender.sendLater {
+                    try {
+                        longRunningStarted.complete(Unit)
+                        awaitCancellation()
+                    } finally {
+                        events += "long-running finally"
+                    }
                 }
-            }
             runBlocking {
                 withTimeout(5_000) {
                     failing.join()

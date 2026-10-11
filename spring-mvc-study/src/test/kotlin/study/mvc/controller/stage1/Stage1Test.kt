@@ -24,7 +24,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @SpringBootTest(classes = [Stage1Test.Config::class])
 @AutoConfigureMockMvc
 class Stage1Test {
-
     @Autowired
     private lateinit var mockMvc: MockMvc
 
@@ -46,13 +45,16 @@ class Stage1Test {
      */
     @Test
     fun asyncDispatchProducesServiceResponse() {
-        val first = mockMvc.perform(get("/products/1"))
-            .andExpect(request().asyncStarted())
-            .andReturn()
+        val first =
+            mockMvc
+                .perform(get("/products/1"))
+                .andExpect(request().asyncStarted())
+                .andReturn()
         // 요청 스레드가 돌아온 뒤에 외부 저장소의 응답이 도착한다.
         productService.respond()
 
-        mockMvc.perform(asyncDispatch(first))
+        mockMvc
+            .perform(asyncDispatch(first))
             .andExpect(status().isOk)
             .andExpect(content().json("""{"id":1,"name":"keyboard"}"""))
     }
@@ -66,11 +68,14 @@ class Stage1Test {
      */
     @Test
     fun controllerFailureReachesAdviceAfterDispatch() {
-        val first = mockMvc.perform(get("/products/999"))
-            .andExpect(request().asyncStarted())
-            .andReturn()
+        val first =
+            mockMvc
+                .perform(get("/products/999"))
+                .andExpect(request().asyncStarted())
+                .andReturn()
 
-        mockMvc.perform(asyncDispatch(first))
+        mockMvc
+            .perform(asyncDispatch(first))
             .andExpect(status().isNotFound)
             .andExpect(content().json("""{"code":"PRODUCT_NOT_FOUND","message":"product 999 not found"}"""))
     }

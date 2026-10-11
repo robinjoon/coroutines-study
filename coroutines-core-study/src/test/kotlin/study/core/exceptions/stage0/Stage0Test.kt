@@ -22,25 +22,26 @@ class Stage0Test {
      * 실패한 자식과 여전히 활성인 supervisor가 함께 존재하는 이유는 무엇일까?
      */
     @Test
-    fun supervisedLaunchReportsUnhandledFailure() = runTest {
-        val events = mutableListOf<String>()
-        val supervisor = SupervisorJob()
-        val handler = CoroutineExceptionHandler { _, failure -> events += "handler:${failure.message}" }
-        val scope = CoroutineScope(supervisor + StandardTestDispatcher(testScheduler) + handler)
-        try {
-            val child = scope.launch { error("launch failed") }
-            runCurrent()
-            child.join()
+    fun supervisedLaunchReportsUnhandledFailure() =
+        runTest {
+            val events = mutableListOf<String>()
+            val supervisor = SupervisorJob()
+            val handler = CoroutineExceptionHandler { _, failure -> events += "handler:${failure.message}" }
+            val scope = CoroutineScope(supervisor + StandardTestDispatcher(testScheduler) + handler)
+            try {
+                val child = scope.launch { error("launch failed") }
+                runCurrent()
+                child.join()
 
-            assertThat(child.isCancelled).isTrue()
-            assertThat(supervisor.isActive).isTrue()
-            // TODO(a): handler가 관찰한 사건을 기록에 맞춰 바꾸자.
-            assertThat(events).containsExactly("")
-        } finally {
-            scope.cancel()
-            supervisor.join()
+                assertThat(child.isCancelled).isTrue()
+                assertThat(supervisor.isActive).isTrue()
+                // TODO(a): handler가 관찰한 사건을 기록에 맞춰 바꾸자.
+                assertThat(events).containsExactly("")
+            } finally {
+                scope.cancel()
+                supervisor.join()
+            }
         }
-    }
 
     /**
      * supervisor의 async 자식은 실패를 Deferred에 보관하고 await에서 호출자에게 던진다.
@@ -51,27 +52,28 @@ class Stage0Test {
      * launch와 async가 실패를 관찰하게 하는 창구가 다른 이유는 무엇일까?
      */
     @Test
-    fun supervisedAsyncExposesFailureAtAwait() = runTest {
-        val events = mutableListOf<String>()
-        val supervisor = SupervisorJob()
-        val handler = CoroutineExceptionHandler { _, failure -> events += "handler:${failure.message}" }
-        val scope = CoroutineScope(supervisor + StandardTestDispatcher(testScheduler) + handler)
-        try {
-            val child = scope.async<String> { error("async failed") }
-            runCurrent()
-            val beforeAwait = events.toList()
-            val failure = runCatching { child.await() }.exceptionOrNull()
-            events += "await:${failure?.message}"
+    fun supervisedAsyncExposesFailureAtAwait() =
+        runTest {
+            val events = mutableListOf<String>()
+            val supervisor = SupervisorJob()
+            val handler = CoroutineExceptionHandler { _, failure -> events += "handler:${failure.message}" }
+            val scope = CoroutineScope(supervisor + StandardTestDispatcher(testScheduler) + handler)
+            try {
+                val child = scope.async<String> { error("async failed") }
+                runCurrent()
+                val beforeAwait = events.toList()
+                val failure = runCatching { child.await() }.exceptionOrNull()
+                events += "await:${failure?.message}"
 
-            assertThat(child.isCancelled).isTrue()
-            assertThat(supervisor.isActive).isTrue()
-            assertThat(failure).isInstanceOf(IllegalStateException::class.java).hasMessage("async failed")
-            // TODO(a): await 전에는 누가 실패를 관찰했고 await 후에는 어떤 사건이 남았을까?
-            assertThat(beforeAwait).containsExactly("")
-            assertThat(events).containsExactly("")
-        } finally {
-            scope.cancel()
-            supervisor.join()
+                assertThat(child.isCancelled).isTrue()
+                assertThat(supervisor.isActive).isTrue()
+                assertThat(failure).isInstanceOf(IllegalStateException::class.java).hasMessage("async failed")
+                // TODO(a): await 전에는 누가 실패를 관찰했고 await 후에는 어떤 사건이 남았을까?
+                assertThat(beforeAwait).containsExactly("")
+                assertThat(events).containsExactly("")
+            } finally {
+                scope.cancel()
+                supervisor.join()
+            }
         }
-    }
 }

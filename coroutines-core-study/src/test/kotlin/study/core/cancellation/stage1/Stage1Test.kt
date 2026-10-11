@@ -18,29 +18,31 @@ class Stage1Test {
      * 시간 예산이 끝났을 때 자식 작업도 정리되는 이유는 무엇일까?
      */
     @Test
-    fun timeoutStopsChildrenAndRunsFinally() = runTest {
-        val events = mutableListOf<String>()
-        val completed = finishWithin(100) {
-            launch {
-                try {
-                    events += "child:start"
-                    delay(1_000)
-                    events += "child:end"
-                } finally {
-                    events += "child:finally"
+    fun timeoutStopsChildrenAndRunsFinally() =
+        runTest {
+            val events = mutableListOf<String>()
+            val completed =
+                finishWithin(100) {
+                    launch {
+                        try {
+                            events += "child:start"
+                            delay(1_000)
+                            events += "child:end"
+                        } finally {
+                            events += "child:finally"
+                        }
+                    }
                 }
-            }
+
+            assertThat(completed).isFalse()
+            assertThat(currentTime).isEqualTo(100L)
+            assertThat(events).containsExactly("child:start", "child:finally")
+            assertThat(finishWithin(100) { delay(10) }).isTrue()
+            assertThat(currentTime).isEqualTo(110L)
+
+            val failure = runCatching { finishWithin(100) { error("work failed") } }.exceptionOrNull()
+            assertThat(failure).isInstanceOf(IllegalStateException::class.java).hasMessage("work failed")
         }
-
-        assertThat(completed).isFalse()
-        assertThat(currentTime).isEqualTo(100L)
-        assertThat(events).containsExactly("child:start", "child:finally")
-        assertThat(finishWithin(100) { delay(10) }).isTrue()
-        assertThat(currentTime).isEqualTo(110L)
-
-        val failure = runCatching { finishWithin(100) { error("work failed") } }.exceptionOrNull()
-        assertThat(failure).isInstanceOf(IllegalStateException::class.java).hasMessage("work failed")
-    }
 
     /**
      * CancellationException은 일반적인 서비스 실패가 아니라 작업을 중단하라는 신호다.
@@ -50,28 +52,40 @@ class Stage1Test {
      * 취소까지 대체값으로 바꾸면 호출자는 어떤 사실을 놓칠까?
      */
     @Test
-    fun cancellationDoesNotBecomeFallback() = runTest {
-        val events = mutableListOf<String>()
-        val fallback = { events += "fallback"; "cached" }
-        assertThat(loadOrFallback({ "fresh" }, fallback)).isEqualTo("fresh")
-        assertThat(events).isEmpty()
-        assertThat(loadOrFallback({ error("unavailable") }, fallback)).isEqualTo("cached")
-        assertThat(events).containsExactly("fallback")
+    fun cancellationDoesNotBecomeFallback() =
+        runTest {
+            val events = mutableListOf<String>()
+            val fallback = {
+                events += "fallback"
+                "cached"
+            }
+            assertThat(loadOrFallback({ "fresh" }, fallback)).isEqualTo("fresh")
+            assertThat(events).isEmpty()
+            assertThat(loadOrFallback({ error("unavailable") }, fallback)).isEqualTo("cached")
+            assertThat(events).containsExactly("fallback")
 
-        events.clear()
-        val cancellation = CancellationException("stop")
-        val failure = runCatching { loadOrFallback({ throw cancellation }, fallback) }.exceptionOrNull()
-        assertThat(failure).isSameAs(cancellation)
-        assertThat(events).isEmpty()
+            events.clear()
+            val cancellation = CancellationException("stop")
+            val failure = runCatching { loadOrFallback({ throw cancellation }, fallback) }.exceptionOrNull()
+            assertThat(failure).isSameAs(cancellation)
+            assertThat(events).isEmpty()
 
-        val result = withTimeoutOrNull(100) {
-            loadOrFallback(
-                { try { delay(1_000); "late" } finally { events += "finally" } },
-                fallback,
-            )
+            val result =
+                withTimeoutOrNull(100) {
+                    loadOrFallback(
+                        {
+                            try {
+                                delay(1_000)
+                                "late"
+                            } finally {
+                                events += "finally"
+                            }
+                        },
+                        fallback,
+                    )
+                }
+            assertThat(result).isNull()
+            assertThat(events).containsExactly("finally")
+            assertThat(currentTime).isEqualTo(100L)
         }
-        assertThat(result).isNull()
-        assertThat(events).containsExactly("finally")
-        assertThat(currentTime).isEqualTo(100L)
-    }
 }

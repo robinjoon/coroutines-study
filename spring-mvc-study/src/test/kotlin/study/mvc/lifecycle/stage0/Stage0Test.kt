@@ -17,7 +17,6 @@ import java.util.concurrent.Executors
  * - [runBlocking API 문서](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html)
  */
 class Stage0Test {
-
     /**
      * 스레드가 하나뿐인 디스패처에서 LegacyClient.call을 두 번(A, B) 동시에 실행하고 사건 순서를 관찰하자.
      *

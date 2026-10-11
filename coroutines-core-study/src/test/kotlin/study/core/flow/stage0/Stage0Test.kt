@@ -17,26 +17,28 @@ class Stage0Test {
      * 동일한 Flow 객체를 수집했는데 생산 코드가 다시 실행되는 이유는 무엇일까?
      */
     @Test
-    fun coldFlowRunsForEachCollector() = runTest {
-        val events = mutableListOf<String>()
-        var productions = 0
-        val numbers = flow {
-            productions++
-            events += "produce:$productions"
-            delay(100)
-            emit(1)
-            emit(2)
-        }
-        val afterCreation = productions
-        val first = numbers.toList()
-        val second = numbers.toList()
+    fun coldFlowRunsForEachCollector() =
+        runTest {
+            val events = mutableListOf<String>()
+            var productions = 0
+            val numbers =
+                flow {
+                    productions++
+                    events += "produce:$productions"
+                    delay(100)
+                    emit(1)
+                    emit(2)
+                }
+            val afterCreation = productions
+            val first = numbers.toList()
+            val second = numbers.toList()
 
-        assertThat(first).containsExactly(1, 2)
-        assertThat(second).containsExactly(1, 2)
-        // TODO(a): Flow 생성과 수집이 생산 코드 실행에 어떤 차이를 만드는지 확인하자.
-        assertThat(afterCreation).isEqualTo(-1)
-        assertThat(productions).isEqualTo(-1)
-        assertThat(events).containsExactly("")
-        assertThat(currentTime).isEqualTo(200L)
-    }
+            assertThat(first).containsExactly(1, 2)
+            assertThat(second).containsExactly(1, 2)
+            // TODO(a): Flow 생성과 수집이 생산 코드 실행에 어떤 차이를 만드는지 확인하자.
+            assertThat(afterCreation).isEqualTo(-1)
+            assertThat(productions).isEqualTo(-1)
+            assertThat(events).containsExactly("")
+            assertThat(currentTime).isEqualTo(200L)
+        }
 }

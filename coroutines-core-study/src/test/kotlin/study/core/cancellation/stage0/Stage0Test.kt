@@ -16,29 +16,31 @@ class Stage0Test {
      * 취소됨과 완료됨이 같은 순간을 뜻하지 않는 이유는 무엇일까?
      */
     @Test
-    fun cancelRequestAndCompletionAreDifferent() = runTest {
-        val events = mutableListOf<String>()
-        val job = launch {
-            try {
-                events += "started"
-                delay(1_000)
-                events += "finished"
-            } finally {
-                events += "finally"
-            }
-        }
-        runCurrent()
-        job.cancel()
-        val cancelledBeforeJoin = job.isCancelled
-        val completedBeforeJoin = job.isCompleted
-        val eventsBeforeJoin = events.toList()
-        job.join()
+    fun cancelRequestAndCompletionAreDifferent() =
+        runTest {
+            val events = mutableListOf<String>()
+            val job =
+                launch {
+                    try {
+                        events += "started"
+                        delay(1_000)
+                        events += "finished"
+                    } finally {
+                        events += "finally"
+                    }
+                }
+            runCurrent()
+            job.cancel()
+            val cancelledBeforeJoin = job.isCancelled
+            val completedBeforeJoin = job.isCompleted
+            val eventsBeforeJoin = events.toList()
+            job.join()
 
-        // TODO(a): 취소 요청과 종료 확인의 차이를 기대값에 반영하자.
-        assertThat(cancelledBeforeJoin).isFalse()
-        assertThat(completedBeforeJoin).isTrue()
-        assertThat(eventsBeforeJoin).containsExactly("")
-        assertThat(job.isCompleted).isTrue()
-        assertThat(events).containsExactly("")
-    }
+            // TODO(a): 취소 요청과 종료 확인의 차이를 기대값에 반영하자.
+            assertThat(cancelledBeforeJoin).isFalse()
+            assertThat(completedBeforeJoin).isTrue()
+            assertThat(eventsBeforeJoin).containsExactly("")
+            assertThat(job.isCompleted).isTrue()
+            assertThat(events).containsExactly("")
+        }
 }

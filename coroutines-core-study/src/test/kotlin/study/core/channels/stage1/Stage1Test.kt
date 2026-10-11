@@ -18,43 +18,48 @@ class Stage1Test {
      * 소비가 끝난 뒤 보내는 생산자를 남겨 두면 어떤 문제가 생길까?
      */
     @Test
-    fun ownedProducerClosesAndCancelsWithConsumer() = runTest {
-        val events = mutableListOf<String>()
-        var channel: ReceiveChannel<Int>? = null
-        val all = consumeProduced(listOf(1, 2, 3), events) { input ->
-            channel = input
-            input.toList()
-        }
-        assertThat(all).containsExactly(1, 2, 3)
-        assertThat(channel!!.receiveCatching().isClosed).isTrue()
-        assertThat(events).containsExactly("producer:start", "sent:1", "sent:2", "sent:3", "producer:finally")
+    fun ownedProducerClosesAndCancelsWithConsumer() =
+        runTest {
+            val events = mutableListOf<String>()
+            var channel: ReceiveChannel<Int>? = null
+            val all =
+                consumeProduced(listOf(1, 2, 3), events) { input ->
+                    channel = input
+                    input.toList()
+                }
+            assertThat(all).containsExactly(1, 2, 3)
+            assertThat(channel!!.receiveCatching().isClosed).isTrue()
+            assertThat(events).containsExactly("producer:start", "sent:1", "sent:2", "sent:3", "producer:finally")
 
-        events.clear()
-        val firstOnly = consumeProduced(listOf(1, 2, 3), events) { input ->
-            listOf(input.receive())
-        }
-        assertThat(firstOnly).containsExactly(1)
-        assertThat(events).contains("producer:start", "producer:finally").doesNotContain("sent:2", "sent:3")
+            events.clear()
+            val firstOnly =
+                consumeProduced(listOf(1, 2, 3), events) { input ->
+                    listOf(input.receive())
+                }
+            assertThat(firstOnly).containsExactly(1)
+            assertThat(events).contains("producer:start", "producer:finally").doesNotContain("sent:2", "sent:3")
 
-        events.clear()
-        val failure = runCatching {
-            consumeProduced(listOf(1, 2, 3), events) { input ->
-                input.receive()
-                error("consumer failed")
-            }
-        }.exceptionOrNull()
-        assertThat(failure).isInstanceOf(IllegalStateException::class.java).hasMessage("consumer failed")
-        assertThat(events).contains("producer:finally")
+            events.clear()
+            val failure =
+                runCatching {
+                    consumeProduced(listOf(1, 2, 3), events) { input ->
+                        input.receive()
+                        error("consumer failed")
+                    }
+                }.exceptionOrNull()
+            assertThat(failure).isInstanceOf(IllegalStateException::class.java).hasMessage("consumer failed")
+            assertThat(events).contains("producer:finally")
 
-        events.clear()
-        val timedOut = withTimeoutOrNull(100) {
-            consumeProduced(listOf(1, 2, 3), events) { input ->
-                input.receive()
-                delay(1_000)
-                input.toList()
-            }
+            events.clear()
+            val timedOut =
+                withTimeoutOrNull(100) {
+                    consumeProduced(listOf(1, 2, 3), events) { input ->
+                        input.receive()
+                        delay(1_000)
+                        input.toList()
+                    }
+                }
+            assertThat(timedOut).isNull()
+            assertThat(events).contains("producer:finally")
         }
-        assertThat(timedOut).isNull()
-        assertThat(events).contains("producer:finally")
-    }
 }

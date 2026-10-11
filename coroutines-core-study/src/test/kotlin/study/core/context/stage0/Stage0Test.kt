@@ -17,25 +17,27 @@ class Stage0Test {
      * 같은 dispatcher로 실행되는데 서로 다른 Job을 갖는 이유는 무엇일까?
      */
     @Test
-    fun childrenInheritDispatcherButHaveOwnJob() = runTest {
-        val parentJob = coroutineContext[Job]!!
-        val parentDispatcher = coroutineContext[ContinuationInterceptor]
-        val events = mutableListOf<String>()
-        var childJob: Job? = null
-        var childDispatcher: ContinuationInterceptor? = null
-        val child = launch {
-            childJob = coroutineContext[Job]
-            childDispatcher = coroutineContext[ContinuationInterceptor]
-            events += "child:started"
-        }
-        val belongsToParent = parentJob.children.toList().contains(child)
-        runCurrent()
-        child.join()
+    fun childrenInheritDispatcherButHaveOwnJob() =
+        runTest {
+            val parentJob = coroutineContext[Job]!!
+            val parentDispatcher = coroutineContext[ContinuationInterceptor]
+            val events = mutableListOf<String>()
+            var childJob: Job? = null
+            var childDispatcher: ContinuationInterceptor? = null
+            val child =
+                launch {
+                    childJob = coroutineContext[Job]
+                    childDispatcher = coroutineContext[ContinuationInterceptor]
+                    events += "child:started"
+                }
+            val belongsToParent = parentJob.children.toList().contains(child)
+            runCurrent()
+            child.join()
 
-        assertThat(events).containsExactly("child:started")
-        // TODO(a): 상속되는 요소와 새로 생기는 요소를 구분해서 기대값을 바꾸자.
-        assertThat(childDispatcher).isNotSameAs(parentDispatcher)
-        assertThat(childJob).isSameAs(parentJob)
-        assertThat(belongsToParent).isFalse()
-    }
+            assertThat(events).containsExactly("child:started")
+            // TODO(a): 상속되는 요소와 새로 생기는 요소를 구분해서 기대값을 바꾸자.
+            assertThat(childDispatcher).isNotSameAs(parentDispatcher)
+            assertThat(childJob).isSameAs(parentJob)
+            assertThat(belongsToParent).isFalse()
+        }
 }

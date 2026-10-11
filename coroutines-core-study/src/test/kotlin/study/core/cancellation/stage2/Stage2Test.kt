@@ -24,29 +24,31 @@ class Stage2Test {
      * 같은 finally 안인데도 suspend 정리의 완료 여부가 달라지는 이유는 무엇일까?
      */
     @Test
-    fun suspendingCleanupNeedsExplicitPolicy() = runTest {
-        val events = mutableListOf<String>()
-        val job = launch {
-            try {
-                events += "work:start"
-                delay(1_000)
-            } finally {
-                events += "cleanup:start"
-                var cleanupContext: CoroutineContext = coroutineContext
-                // cleanupContext = NonCancellable
-                withContext(cleanupContext) {
-                    delay(50)
-                    events += "cleanup:end"
+    fun suspendingCleanupNeedsExplicitPolicy() =
+        runTest {
+            val events = mutableListOf<String>()
+            val job =
+                launch {
+                    try {
+                        events += "work:start"
+                        delay(1_000)
+                    } finally {
+                        events += "cleanup:start"
+                        var cleanupContext: CoroutineContext = coroutineContext
+                        // cleanupContext = NonCancellable
+                        withContext(cleanupContext) {
+                            delay(50)
+                            events += "cleanup:end"
+                        }
+                    }
                 }
-            }
-        }
-        runCurrent()
-        job.cancelAndJoin()
+            runCurrent()
+            job.cancelAndJoin()
 
-        // TODO(a): 먼저 주석을 유지한 상태의 사건과 가상 시간에 맞게 기대값을 바꾸자.
-        assertThat(events).containsExactly("")
-        assertThat(currentTime).isEqualTo(-1L)
-        assertThat(job.isCancelled).isTrue()
-        assertThat(job.isCompleted).isTrue()
-    }
+            // TODO(a): 먼저 주석을 유지한 상태의 사건과 가상 시간에 맞게 기대값을 바꾸자.
+            assertThat(events).containsExactly("")
+            assertThat(currentTime).isEqualTo(-1L)
+            assertThat(job.isCancelled).isTrue()
+            assertThat(job.isCompleted).isTrue()
+        }
 }

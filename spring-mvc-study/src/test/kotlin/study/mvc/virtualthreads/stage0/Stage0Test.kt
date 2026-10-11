@@ -34,7 +34,6 @@ import java.util.concurrent.Executors
     ],
 )
 class Stage0Test {
-
     @LocalServerPort
     private var port: Int = 0
 
@@ -52,18 +51,28 @@ class Stage0Test {
      */
     @Test
     fun virtualThreadSettingChangesRequestThreadNotExplicitDispatcher() {
-        val report = RestClient.create("http://localhost:$port").get().uri("/thread-report").retrieve().body<ThreadReport>()!!
+        val report =
+            RestClient
+                .create("http://localhost:$port")
+                .get()
+                .uri("/thread-report")
+                .retrieve()
+                .body<ThreadReport>()!!
 
         // TODO(a): 관찰한 결과로 기대값을 고치자. 그다음 위 설명의 2번을 진행하자.
         assertThat(report.requestThreadVirtual).isTrue()
         assertThat(report.dispatcherThreadVirtual).isTrue()
     }
 
-    data class ThreadReport(val requestThreadVirtual: Boolean, val dispatcherThreadVirtual: Boolean)
+    data class ThreadReport(
+        val requestThreadVirtual: Boolean,
+        val dispatcherThreadVirtual: Boolean,
+    )
 
     @RestController
-    class ThreadReportController(private val platformDispatcher: ExecutorCoroutineDispatcher) {
-
+    class ThreadReportController(
+        private val platformDispatcher: ExecutorCoroutineDispatcher,
+    ) {
         @GetMapping("/thread-report")
         suspend fun report(): ThreadReport {
             val requestThreadVirtual = Thread.currentThread().isVirtual

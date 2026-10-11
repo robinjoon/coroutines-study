@@ -27,7 +27,9 @@ class PaymentClient {
  * 완성되어 있으니 수정하지 않는다.
  */
 @Service
-class OrderTxService(private val jdbcTemplate: JdbcTemplate) {
+class OrderTxService(
+    private val jdbcTemplate: JdbcTemplate,
+) {
     val observations = CopyOnWriteArrayList<String>()
 
     /** 테스트가 설정하면 저장을 시작하기 직전에 호출된다. */
@@ -35,7 +37,11 @@ class OrderTxService(private val jdbcTemplate: JdbcTemplate) {
     var beforeSave: (() -> Unit)? = null
 
     @Transactional
-    fun saveOrderWithHistory(item: String, paymentId: String, failHistory: Boolean) {
+    fun saveOrderWithHistory(
+        item: String,
+        paymentId: String,
+        failHistory: Boolean,
+    ) {
         beforeSave?.invoke()
         observations += "active=${TransactionSynchronizationManager.isActualTransactionActive()} thread=${Thread.currentThread().name}"
         jdbcTemplate.update("insert into orders(item, payment_id) values (?, ?)", item, paymentId)
@@ -54,7 +60,10 @@ class OrderFacade(
     private val orderTxService: OrderTxService,
     private val txDispatcher: CoroutineDispatcher,
 ) {
-    suspend fun place(item: String, failHistory: Boolean = false) {
+    suspend fun place(
+        item: String,
+        failHistory: Boolean = false,
+    ) {
         // TODO(b): 1. 결제 승인(paymentClient.approve)은 트랜잭션 밖에서 기다린다.
         //          2. 주문 저장(orderTxService.saveOrderWithHistory)은 txDispatcher 스레드에서, 하나의 블로킹 트랜잭션으로 시작부터 끝까지 실행한다.
         TODO("결제 승인과 주문 저장을 조합하도록 구현하세요")

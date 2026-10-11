@@ -20,32 +20,49 @@ class Stage1Test {
      * 실패를 따로 처리했을 때 정상 형제가 끝까지 실행되는 이유는 무엇일까?
      */
     @Test
-    fun supervisorKeepsHealthySiblingRunning() = runTest {
-        val events = mutableListOf<String>()
-        val result = supervisedResults(
-            first = { delay(10); error("first failed") },
-            second = {
-                try { delay(100); events += "second:end"; "healthy" }
-                finally { events += "second:finally" }
-            },
-            onFailure = { events += "failure:${it.message}" },
-        )
+    fun supervisorKeepsHealthySiblingRunning() =
+        runTest {
+            val events = mutableListOf<String>()
+            val result =
+                supervisedResults(
+                    first = {
+                        delay(10)
+                        error("first failed")
+                    },
+                    second = {
+                        try {
+                            delay(100)
+                            events += "second:end"
+                            "healthy"
+                        } finally {
+                            events += "second:finally"
+                        }
+                    },
+                    onFailure = { events += "failure:${it.message}" },
+                )
 
-        assertThat(result).containsExactly("healthy")
-        assertThat(events).containsExactly("failure:first failed", "second:end", "second:finally")
-        assertThat(currentTime).isEqualTo(100L)
-        assertThat(supervisedResults({ "first" }, { "second" }, { error("unexpected failure") }))
-            .containsExactly("first", "second")
+            assertThat(result).containsExactly("healthy")
+            assertThat(events).containsExactly("failure:first failed", "second:end", "second:finally")
+            assertThat(currentTime).isEqualTo(100L)
+            assertThat(supervisedResults({ "first" }, { "second" }, { error("unexpected failure") }))
+                .containsExactly("first", "second")
 
-        events.clear()
-        val reversed = supervisedResults(
-            first = { delay(100); "healthy-first" },
-            second = { delay(10); error("second failed") },
-            onFailure = { events += "failure:${it.message}" },
-        )
-        assertThat(reversed).containsExactly("healthy-first")
-        assertThat(events).containsExactly("failure:second failed")
-    }
+            events.clear()
+            val reversed =
+                supervisedResults(
+                    first = {
+                        delay(100)
+                        "healthy-first"
+                    },
+                    second = {
+                        delay(10)
+                        error("second failed")
+                    },
+                    onFailure = { events += "failure:${it.message}" },
+                )
+            assertThat(reversed).containsExactly("healthy-first")
+            assertThat(events).containsExactly("failure:second failed")
+        }
 
     /**
      * supervision은 자식 실패의 전파 방향을 바꾸지만 부모 취소를 무시하지 않는다.
@@ -55,35 +72,47 @@ class Stage1Test {
      * 자식 실패는 격리하면서 부모 취소는 전달하는 이유는 무엇일까?
      */
     @Test
-    fun supervisorStillPropagatesParentCancellation() = runTest {
-        val events = mutableListOf<String>()
-        supervisorScope {
-            val parent = async {
-                supervisedResults(
-                    first = {
-                        events += "first:start"
-                        try { delay(1_000); "first" } finally { events += "first:finally" }
-                    },
-                    second = {
-                        events += "second:start"
-                        try { delay(1_000); "second" } finally { events += "second:finally" }
-                    },
-                    onFailure = { events += "fallback" },
-                )
+    fun supervisorStillPropagatesParentCancellation() =
+        runTest {
+            val events = mutableListOf<String>()
+            supervisorScope {
+                val parent =
+                    async {
+                        supervisedResults(
+                            first = {
+                                events += "first:start"
+                                try {
+                                    delay(1_000)
+                                    "first"
+                                } finally {
+                                    events += "first:finally"
+                                }
+                            },
+                            second = {
+                                events += "second:start"
+                                try {
+                                    delay(1_000)
+                                    "second"
+                                } finally {
+                                    events += "second:finally"
+                                }
+                            },
+                            onFailure = { events += "fallback" },
+                        )
+                    }
+                runCurrent()
+                // 미구현 실패를 await로 직접 전달해 teardown 예외로 숨기지 않는다.
+                if (parent.isCompleted) parent.await()
+                assertThat(events).containsExactlyInAnyOrder("first:start", "second:start")
+
+                parent.cancelAndJoin()
+                val failure = runCatching { parent.await() }.exceptionOrNull()
+
+                assertThat(failure).isInstanceOf(CancellationException::class.java)
+                assertThat(parent.isCancelled).isTrue()
+                assertThat(events).containsExactlyInAnyOrder("first:start", "second:start", "first:finally", "second:finally")
+                assertThat(events).doesNotContain("fallback")
+                assertThat(currentTime).isEqualTo(0L)
             }
-            runCurrent()
-            // 미구현 실패를 await로 직접 전달해 teardown 예외로 숨기지 않는다.
-            if (parent.isCompleted) parent.await()
-            assertThat(events).containsExactlyInAnyOrder("first:start", "second:start")
-
-            parent.cancelAndJoin()
-            val failure = runCatching { parent.await() }.exceptionOrNull()
-
-            assertThat(failure).isInstanceOf(CancellationException::class.java)
-            assertThat(parent.isCancelled).isTrue()
-            assertThat(events).containsExactlyInAnyOrder("first:start", "second:start", "first:finally", "second:finally")
-            assertThat(events).doesNotContain("fallback")
-            assertThat(currentTime).isEqualTo(0L)
         }
-    }
 }

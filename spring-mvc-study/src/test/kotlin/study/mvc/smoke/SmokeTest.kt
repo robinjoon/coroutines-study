@@ -29,10 +29,13 @@ class SmokeTest {
 
     @Test
     fun suspendControllerAndJdbc() {
-        val result = mockMvc.perform(get("/smoke"))
-            .andExpect(request().asyncStarted())
-            .andReturn()
-        mockMvc.perform(asyncDispatch(result))
+        val result =
+            mockMvc
+                .perform(get("/smoke"))
+                .andExpect(request().asyncStarted())
+                .andReturn()
+        mockMvc
+            .perform(asyncDispatch(result))
             .andExpect(content().json("""{"value":"ok"}"""))
 
         assertThat(jdbcTemplate.queryForObject("select 1", Int::class.java)).isEqualTo(1)

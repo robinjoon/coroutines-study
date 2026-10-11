@@ -16,15 +16,16 @@ class Stage1Test {
      * 본문 종료와 함수 반환 사이에 다른 사건들이 들어오는 이유는 무엇일까?
      */
     @Test
-    fun parentReturnsAfterChildrenComplete() = runTest {
-        val events = mutableListOf<String>()
+    fun parentReturnsAfterChildrenComplete() =
+        runTest {
+            val events = mutableListOf<String>()
 
-        greetWithChildren(events)
-        events += "caller:returned"
+            greetWithChildren(events)
+            events += "caller:returned"
 
-        assertThat(events).containsExactly("parent:body-end", "first:end", "second:end", "caller:returned")
-        assertThat(currentTime).isEqualTo(200L)
-    }
+            assertThat(events).containsExactly("parent:body-end", "first:end", "second:end", "caller:returned")
+            assertThat(currentTime).isEqualTo(200L)
+        }
 
     /**
      * launch가 반환한 Job은 작업의 완료와 취소를 다루는 손잡이다.
@@ -34,19 +35,21 @@ class Stage1Test {
      * 기다리는 기능과 결과를 받는 기능이 별개인 이유는 무엇일까?
      */
     @Test
-    fun joinWaitsButDoesNotProduceValue() = runTest {
-        val events = mutableListOf("caller:before-join")
-        val job = launch {
-            delay(100)
-            events += "child:end"
+    fun joinWaitsButDoesNotProduceValue() =
+        runTest {
+            val events = mutableListOf("caller:before-join")
+            val job =
+                launch {
+                    delay(100)
+                    events += "child:end"
+                }
+
+            val result: Unit = waitForJob(job)
+            events += "caller:after-join"
+
+            assertThat(result).isEqualTo(Unit)
+            assertThat(job.isCompleted).isTrue()
+            assertThat(events).containsExactly("caller:before-join", "child:end", "caller:after-join")
+            assertThat(currentTime).isEqualTo(100L)
         }
-
-        val result: Unit = waitForJob(job)
-        events += "caller:after-join"
-
-        assertThat(result).isEqualTo(Unit)
-        assertThat(job.isCompleted).isTrue()
-        assertThat(events).containsExactly("caller:before-join", "child:end", "caller:after-join")
-        assertThat(currentTime).isEqualTo(100L)
-    }
 }

@@ -42,7 +42,6 @@ import java.util.concurrent.TimeUnit
     properties = ["spring.datasource.url=jdbc:h2:mem:transactions-stage1;DB_CLOSE_DELAY=-1"],
 )
 class Stage1Test {
-
     @Autowired
     private lateinit var jdbcTemplate: JdbcTemplate
 
@@ -57,7 +56,9 @@ class Stage1Test {
 
     @BeforeEach
     fun setUp() {
-        jdbcTemplate.execute("create table if not exists orders(id bigint auto_increment primary key, item varchar(50), payment_id varchar(50))")
+        jdbcTemplate.execute(
+            "create table if not exists orders(id bigint auto_increment primary key, item varchar(50), payment_id varchar(50))",
+        )
         jdbcTemplate.execute("create table if not exists order_history(id bigint auto_increment primary key, item varchar(50))")
         jdbcTemplate.execute("delete from orders")
         jdbcTemplate.execute("delete from order_history")
@@ -125,7 +126,10 @@ class Stage1Test {
         fun paymentClient() = PaymentClient()
 
         @Bean
-        fun orderFacade(paymentClient: PaymentClient, orderTxService: OrderTxService, txDispatcher: ExecutorCoroutineDispatcher) =
-            OrderFacade(paymentClient, orderTxService, txDispatcher)
+        fun orderFacade(
+            paymentClient: PaymentClient,
+            orderTxService: OrderTxService,
+            txDispatcher: ExecutorCoroutineDispatcher,
+        ) = OrderFacade(paymentClient, orderTxService, txDispatcher)
     }
 }

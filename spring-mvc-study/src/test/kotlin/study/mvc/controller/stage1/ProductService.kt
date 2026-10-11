@@ -5,11 +5,19 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
 import org.springframework.stereotype.Service
 
-data class ProductResponse(val id: Long, val name: String)
+data class ProductResponse(
+    val id: Long,
+    val name: String,
+)
 
-data class ErrorResponse(val code: String, val message: String)
+data class ErrorResponse(
+    val code: String,
+    val message: String,
+)
 
-class ProductNotFoundException(id: Long) : RuntimeException("product $id not found")
+class ProductNotFoundException(
+    id: Long,
+) : RuntimeException("product $id not found")
 
 /**
  * 외부 저장소에서 상품을 조회하는 suspend 서비스. 완성되어 있으니 수정하지 않는다.

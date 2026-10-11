@@ -18,7 +18,6 @@ import java.util.concurrent.Executors
  * - [SLF4J MDC](https://www.slf4j.org/manual.html#mdc)
  */
 class Stage0Test {
-
     @AfterEach
     fun tearDown() {
         MDC.clear()
@@ -36,9 +35,10 @@ class Stage0Test {
         MDC.put("requestId", "req-1")
 
         val sameThread = runBlocking { MDC.get("requestId") }
-        val otherThread = Executors.newSingleThreadExecutor { Thread(it, "worker") }.asCoroutineDispatcher().use { worker ->
-            runBlocking { withContext(worker) { MDC.get("requestId") } }
-        }
+        val otherThread =
+            Executors.newSingleThreadExecutor { Thread(it, "worker") }.asCoroutineDispatcher().use { worker ->
+                runBlocking { withContext(worker) { MDC.get("requestId") } }
+            }
 
         // TODO(a): 관찰한 결과로 기대값을 고치자.
         assertThat(sameThread).isNull()

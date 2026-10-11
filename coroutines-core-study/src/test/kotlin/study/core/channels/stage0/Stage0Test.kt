@@ -16,28 +16,30 @@ class Stage0Test {
      * send를 실행했는데 send:end가 바로 기록되지 않은 이유는 무엇일까?
      */
     @Test
-    fun sendWaitsForReceiveOnRendezvousChannel() = runTest {
-        val events = mutableListOf<String>()
-        val channel = Channel<Int>(Channel.RENDEZVOUS)
-        val sender = launch {
-            events += "send:start"
-            channel.send(7)
-            events += "send:end"
-        }
-        val beforeRunCurrent = events.toList()
-        runCurrent()
-        val beforeReceive = events.toList()
-        val completedBeforeReceive = sender.isCompleted
-        val received = channel.receive()
-        runCurrent()
-        sender.join()
-        channel.close()
+    fun sendWaitsForReceiveOnRendezvousChannel() =
+        runTest {
+            val events = mutableListOf<String>()
+            val channel = Channel<Int>(Channel.RENDEZVOUS)
+            val sender =
+                launch {
+                    events += "send:start"
+                    channel.send(7)
+                    events += "send:end"
+                }
+            val beforeRunCurrent = events.toList()
+            runCurrent()
+            val beforeReceive = events.toList()
+            val completedBeforeReceive = sender.isCompleted
+            val received = channel.receive()
+            runCurrent()
+            sender.join()
+            channel.close()
 
-        assertThat(received).isEqualTo(7)
-        // TODO(a): send의 시작과 완료를 구분해 세 시점의 기대값을 채워 보자.
-        assertThat(beforeRunCurrent).containsExactly("")
-        assertThat(beforeReceive).containsExactly("")
-        assertThat(completedBeforeReceive).isTrue()
-        assertThat(events).containsExactly("")
-    }
+            assertThat(received).isEqualTo(7)
+            // TODO(a): send의 시작과 완료를 구분해 세 시점의 기대값을 채워 보자.
+            assertThat(beforeRunCurrent).containsExactly("")
+            assertThat(beforeReceive).containsExactly("")
+            assertThat(completedBeforeReceive).isTrue()
+            assertThat(events).containsExactly("")
+        }
 }

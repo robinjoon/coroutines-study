@@ -8,8 +8,9 @@ import org.junit.jupiter.api.Test
 
 class SmokeTest {
     @Test
-    fun virtualTime() = runTest {
-        delay(1_000)
-        assertThat(currentTime).isEqualTo(1_000)
-    }
+    fun virtualTime() =
+        runTest {
+            delay(1_000)
+            assertThat(currentTime).isEqualTo(1_000)
+        }
 }

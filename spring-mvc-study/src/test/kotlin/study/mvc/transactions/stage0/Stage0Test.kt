@@ -30,7 +30,6 @@ import org.springframework.transaction.PlatformTransactionManager
     properties = ["spring.datasource.url=jdbc:h2:mem:transactions-stage0;DB_CLOSE_DELAY=-1"],
 )
 class Stage0Test {
-
     @Autowired
     private lateinit var jdbcTemplate: JdbcTemplate
 

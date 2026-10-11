@@ -11,8 +11,9 @@ import kotlin.coroutines.CoroutineContext
  * 요청이 끝난 뒤에도 계속되어야 하는 작업(예: 알림 발송)을 실행하는 애플리케이션 수명의 코루틴 스코프.
  * 스프링 빈으로 등록되고, 애플리케이션 컨텍스트가 닫힐 때 함께 정리되어야 한다.
  */
-class ApplicationCoroutineScope : CoroutineScope, DisposableBean {
-
+class ApplicationCoroutineScope :
+    CoroutineScope,
+    DisposableBean {
     /** 처리되지 않은 예외로 실패한 작업의 예외를 기록한다. */
     val failures = CopyOnWriteArrayList<Throwable>()
 
@@ -32,6 +33,8 @@ class ApplicationCoroutineScope : CoroutineScope, DisposableBean {
 /**
  * 알림을 비동기로 보낸다. 완성되어 있으니 수정하지 않는다.
  */
-class NotificationSender(private val scope: ApplicationCoroutineScope) {
+class NotificationSender(
+    private val scope: ApplicationCoroutineScope,
+) {
     fun sendLater(action: suspend () -> Unit): Job = scope.launch { action() }
 }

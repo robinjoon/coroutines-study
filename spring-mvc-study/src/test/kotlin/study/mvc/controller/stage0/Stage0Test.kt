@@ -27,7 +27,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 @SpringBootTest(classes = [Stage0Test.Config::class])
 @AutoConfigureMockMvc
 class Stage0Test {
-
     @Autowired
     private lateinit var mockMvc: MockMvc
 

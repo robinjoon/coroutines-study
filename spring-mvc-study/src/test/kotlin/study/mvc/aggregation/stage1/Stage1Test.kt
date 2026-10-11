@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test
  * - [공식 가이드(예외 전파)](https://kotlinlang.org/docs/exception-handling.html)
  */
 class Stage1Test {
-
     /**
      * `coroutineScope { async { ... } }`로 두 호출을 동시에 시작할 수 있다.
      * 구조화된 동시성 덕분에 자식 하나가 실패하면 형제 자식도 취소되고, 예외는 부모로 전파된다.
@@ -45,10 +44,11 @@ class Stage1Test {
         // 2. 선택 정보인 재고가 실패하면 부분 응답을 만든다.
         runTest {
             val events = mutableListOf<String>()
-            val service = ProductSummaryService(
-                FakePriceClient(events),
-                FakeStockClient(events, delayMillis = 50, fail = true),
-            )
+            val service =
+                ProductSummaryService(
+                    FakePriceClient(events),
+                    FakeStockClient(events, delayMillis = 50, fail = true),
+                )
 
             assertThat(service.summary(1)).isEqualTo(ProductSummary(1, 10_000, null))
             assertThat(currentTime).isEqualTo(100)
@@ -58,10 +58,11 @@ class Stage1Test {
         // 3. 필수 정보인 가격이 실패하면 전체가 실패하고, 진행 중인 재고 조회는 취소된다.
         runTest {
             val events = mutableListOf<String>()
-            val service = ProductSummaryService(
-                FakePriceClient(events, delayMillis = 50, fail = true),
-                FakeStockClient(events),
-            )
+            val service =
+                ProductSummaryService(
+                    FakePriceClient(events, delayMillis = 50, fail = true),
+                    FakeStockClient(events),
+                )
 
             val failure = runCatching { service.summary(1) }.exceptionOrNull()
 
@@ -109,10 +110,11 @@ class Stage1Test {
         // 1. 재고가 예산(100ms)을 넘기면 재고만 포기한다.
         runTest {
             val events = mutableListOf<String>()
-            val service = ProductSummaryService(
-                FakePriceClient(events, delayMillis = 150),
-                FakeStockClient(events, delayMillis = 200),
-            )
+            val service =
+                ProductSummaryService(
+                    FakePriceClient(events, delayMillis = 150),
+                    FakeStockClient(events, delayMillis = 200),
+                )
 
             assertThat(service.summaryWithDeadline(1)).isEqualTo(ProductSummary(1, 10_000, null))
             assertThat(currentTime).isEqualTo(150)
@@ -122,10 +124,11 @@ class Stage1Test {
         // 2. 요청 전체가 예산(300ms)을 넘기면 SummaryTimeoutException으로 실패하고 남은 호출은 취소된다.
         runTest {
             val events = mutableListOf<String>()
-            val service = ProductSummaryService(
-                FakePriceClient(events, delayMillis = 500),
-                FakeStockClient(events, delayMillis = 50),
-            )
+            val service =
+                ProductSummaryService(
+                    FakePriceClient(events, delayMillis = 500),
+                    FakeStockClient(events, delayMillis = 50),
+                )
 
             val failure = runCatching { service.summaryWithDeadline(1) }.exceptionOrNull()
 

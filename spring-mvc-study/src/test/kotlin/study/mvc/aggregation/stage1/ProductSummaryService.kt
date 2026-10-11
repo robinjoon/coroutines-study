@@ -3,11 +3,23 @@ package study.mvc.aggregation.stage1
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 
-data class ProductSummary(val id: Long, val price: Int, val stock: Int?)
+data class ProductSummary(
+    val id: Long,
+    val price: Int,
+    val stock: Int?,
+)
 
-class PriceUnavailableException(id: Long) : RuntimeException("price $id unavailable")
-class StockUnavailableException(id: Long) : RuntimeException("stock $id unavailable")
-class SummaryTimeoutException(id: Long) : RuntimeException("summary $id timed out")
+class PriceUnavailableException(
+    id: Long,
+) : RuntimeException("price $id unavailable")
+
+class StockUnavailableException(
+    id: Long,
+) : RuntimeException("stock $id unavailable")
+
+class SummaryTimeoutException(
+    id: Long,
+) : RuntimeException("summary $id timed out")
 
 interface PriceClient {
     suspend fun price(id: Long): Int
@@ -26,7 +38,6 @@ class ProductSummaryService(
     private val priceClient: PriceClient,
     private val stockClient: StockClient,
 ) {
-
     suspend fun summary(id: Long): ProductSummary {
         // TODO(b): 가격과 재고를 동시에 조회하자.
         //  - 재고 조회가 StockUnavailableException으로 실패하면 stock = null (catch (e: Exception)처럼 넓게 잡으면 취소 신호까지 삼키니 주의)
