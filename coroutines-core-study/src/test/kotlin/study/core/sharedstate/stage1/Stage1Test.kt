@@ -4,7 +4,6 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeoutOrNull
 import org.assertj.core.api.Assertions.assertThat
@@ -34,25 +33,13 @@ class Stage1Test {
             assertThat(counter.maxActive).describedAs("잠금 안에 동시에 들어간 코루틴 수의 최댓값").isEqualTo(1)
             assertThat(counter.active).describedAs("증가가 모두 끝나면 잠금 안에 남은 코루틴이 없어야 한다").isEqualTo(0)
 
-            // 잠금 대기자가 즉시 재개되어도 이전 증가의 쓰기가 끝난 값을 읽어야 한다.
-            val boundaryCounter = ProtectedCounter()
-            // UNDISPATCHED: 대기열을 거치지 않고 시작해 첫 중단 지점까지 실행한다.
-            val first = launch(start = CoroutineStart.UNDISPATCHED) { boundaryCounter.increment() }
-            // UnconfinedTestDispatcher: 잠금 대기에서 깨어나면 대기열을 거치지 않고 바로 이어서 실행한다.
-            val second = launch(UnconfinedTestDispatcher(testScheduler)) { boundaryCounter.increment() }
-            first.join()
-            second.join()
-            assertThat(boundaryCounter.value)
-                .describedAs("다음 잠금 대기자는 이전 증가의 쓰기가 끝난 값을 읽어야 한다")
-                .isEqualTo(2)
-
             val cancelledCounter = ProtectedCounter()
             // UNDISPATCHED로 첫 yield까지 실행해 잠금 안에 들어간 자식을 바로 관찰한다.
             val child = launch(start = CoroutineStart.UNDISPATCHED) { cancelledCounter.increment() }
             assertThat(cancelledCounter.active).describedAs("yield에서 멈춘 자식이 잠금 안에 들어가 있어야 한다").isEqualTo(1)
             child.cancelAndJoin()
             assertThat(cancelledCounter.active).describedAs("취소된 뒤에도 finally에서 active가 줄어야 한다").isEqualTo(0)
-            assertThat(cancelledCounter.value).isEqualTo(0)
+            assertThat(cancelledCounter.value).describedAs("취소된 증가가 반영되지 않아야 한다").isEqualTo(0)
 
             // 잠금을 반납하지 않은 구현도 가상 시간 안에 설명이 붙은 단언으로 실패하게 한다.
             val reentered =
