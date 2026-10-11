@@ -23,28 +23,55 @@ class Stage1Test {
     fun supervisorKeepsHealthySiblingRunning() =
         runTest {
             val events = mutableListOf<String>()
-            val result =
-                supervisedResults(
-                    first = {
-                        delay(10)
-                        error("first failed")
-                    },
-                    second = {
-                        try {
-                            delay(100)
-                            events += "second:end"
-                            "healthy"
-                        } finally {
-                            events += "second:finally"
-                        }
-                    },
-                    onFailure = { events += "failure:${it.message}" },
-                )
+            val outcome =
+                runCatching {
+                    supervisedResults(
+                        first = {
+                            delay(10)
+                            error("first failed")
+                        },
+                        second = {
+                            try {
+                                delay(100)
+                                events += "second:end"
+                                "healthy"
+                            } finally {
+                                events += "second:finally"
+                            }
+                        },
+                        onFailure = { events += "failure:${it.message}" },
+                    )
+                }
+
+            assertThat(outcome.exceptionOrNull())
+                .describedAs("한 자식의 일반 실패가 정상 형제와 호출자까지 실패시키면 안 된다")
+                .isNull()
+            val result = outcome.getOrThrow()
 
             assertThat(result).containsExactly("healthy")
             assertThat(events).containsExactly("failure:first failed", "second:end", "second:finally")
-            assertThat(currentTime).isEqualTo(100L)
+            assertThat(currentTime)
+                .describedAs("실패한 자식을 처리하는 동안 정상 형제도 함께 진행되어야 한다")
+                .isEqualTo(100L)
+            // 실패가 없으면 onFailure는 호출되지 않아야 한다. 호출되면 이 람다가 예외를 던진다.
             assertThat(supervisedResults({ "first" }, { "second" }, { error("unexpected failure") }))
+                .containsExactly("first", "second")
+
+            // 두 작업이 모두 성공하되 두 번째가 먼저 끝나는 경우에도 입력 순서를 유지한다.
+            val ordered =
+                supervisedResults(
+                    first = {
+                        delay(100)
+                        "first"
+                    },
+                    second = {
+                        delay(10)
+                        "second"
+                    },
+                    onFailure = { error("unexpected failure") },
+                )
+            assertThat(ordered)
+                .describedAs("완료 순서와 관계없이 성공 결과는 입력 순서로 반환해야 한다")
                 .containsExactly("first", "second")
 
             events.clear()
@@ -75,6 +102,7 @@ class Stage1Test {
     fun supervisorStillPropagatesParentCancellation() =
         runTest {
             val events = mutableListOf<String>()
+            // 테스트 자체를 취소하지 않고 supervisedResults의 호출자(parent)만 취소하려고 감싼다.
             supervisorScope {
                 val parent =
                     async {
@@ -101,16 +129,20 @@ class Stage1Test {
                         )
                     }
                 runCurrent()
-                // 미구현 실패를 await로 직접 전달해 teardown 예외로 숨기지 않는다.
+                // 구현이 곧바로 실패해 끝났다면(예: TODO 미구현) 그 예외를 여기서 그대로 보여 준다.
                 if (parent.isCompleted) parent.await()
-                assertThat(events).containsExactlyInAnyOrder("first:start", "second:start")
+                assertThat(events)
+                    .describedAs("부모를 취소하기 전에 두 자식이 모두 시작되어 있어야 한다")
+                    .containsExactlyInAnyOrder("first:start", "second:start")
 
                 parent.cancelAndJoin()
                 val failure = runCatching { parent.await() }.exceptionOrNull()
 
                 assertThat(failure).isInstanceOf(CancellationException::class.java)
                 assertThat(parent.isCancelled).isTrue()
-                assertThat(events).containsExactlyInAnyOrder("first:start", "second:start", "first:finally", "second:finally")
+                assertThat(events)
+                    .describedAs("부모 취소가 두 자식에게 전달되고 각각 finally를 실행해야 한다")
+                    .containsExactlyInAnyOrder("first:start", "second:start", "first:finally", "second:finally")
                 assertThat(events).doesNotContain("fallback")
                 assertThat(currentTime).isEqualTo(0L)
             }
