@@ -6,7 +6,9 @@ suspend fun finishWithin(
     timeoutMillis: Long,
     work: suspend CoroutineScope.() -> Unit,
 ): Boolean {
-    // TODO(b): 시간 안에 자식까지 완료하면 true, timeout이면 false를 반환한다. 일반 실패는 전파한다.
+    // TODO(b): 시간 안에 자식까지 완료하면 true, 이 함수의 시간 예산이 만료되면 false를 반환한다.
+    // work의 실패·취소·별도 timeout은 그대로 전파한다. withTimeout과 withTimeoutOrNull의 차이는 docs/concepts.md를 참고하자.
+    // work는 CoroutineScope를 리시버로 받는 람다다. 리시버가 되는 스코프 안에서 호출하자.
     TODO("시간 예산 안에서 작업과 자식의 완료를 기다리세요")
 }
 

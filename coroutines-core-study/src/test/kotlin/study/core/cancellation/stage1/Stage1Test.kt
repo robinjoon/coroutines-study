@@ -1,16 +1,20 @@
 package study.core.cancellation.stage1
 
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class Stage1Test {
     /**
+     * finishWithin은 자식까지 시간 안에 완료하면 true, 자신의 시간 예산이 만료된 경우만 false를 반환한다.
+     * work에서 발생한 실패·취소·별도 timeout은 그대로 전파한다.
      * withTimeout은 시간 예산을 넘으면 내부 작업과 그 자식을 취소한다.
      * 취소 중에도 finally는 실행되므로 자식의 정리를 확인할 수 있다.
      * [공식 문서](https://kotlinlang.org/docs/coroutines-cancellation.html#timeout)
@@ -21,6 +25,7 @@ class Stage1Test {
     fun timeoutStopsChildrenAndRunsFinally() =
         runTest {
             val events = mutableListOf<String>()
+            // 1) 이 함수의 예산이 만료되면 자식의 finally까지 실행하고 false를 반환한다.
             val completed =
                 finishWithin(100) {
                     launch {
@@ -34,14 +39,41 @@ class Stage1Test {
                     }
                 }
 
-            assertThat(completed).isFalse()
-            assertThat(currentTime).isEqualTo(100L)
-            assertThat(events).containsExactly("child:start", "child:finally")
-            assertThat(finishWithin(100) { delay(10) }).isTrue()
+            assertThat(completed).describedAs("이 함수의 시간 예산이 만료되면 false를 반환해야 한다").isFalse()
+            assertThat(currentTime).describedAs("시간 예산이 만료되면 자식의 원래 완료 시각까지 기다리지 않는다").isEqualTo(100L)
+            assertThat(events)
+                .describedAs("반환 전에 자식이 취소되고 finally가 실행돼야 한다")
+                .containsExactly("child:start", "child:finally")
+
+            // 2) 시간 안에 완료되면 true를 반환하고, 일반 실패는 전파한다.
+            assertThat(finishWithin(100) { delay(10) }).describedAs("시간 안에 끝난 작업은 성공이다").isTrue()
+            // currentTime은 runTest 전체에서 누적된다. 앞 단계에서 흐른 시간 + 이번 단계의 시간이다.
             assertThat(currentTime).isEqualTo(110L)
 
             val failure = runCatching { finishWithin(100) { error("work failed") } }.exceptionOrNull()
-            assertThat(failure).isInstanceOf(IllegalStateException::class.java).hasMessage("work failed")
+            assertThat(failure)
+                .describedAs("작업의 일반 실패는 시간 예산 만료로 바꾸지 않아야 한다")
+                .isInstanceOf(IllegalStateException::class.java)
+                .hasMessage("work failed")
+
+            // 3) 작업의 취소 신호는 이 함수의 예산 만료와 다르다.
+            val cancellation = CancellationException("work cancelled")
+            val cancelled = runCatching { finishWithin(100) { throw cancellation } }.exceptionOrNull()
+            assertThat(cancelled)
+                .describedAs("work의 CancellationException은 false로 바꾸지 말고 호출자에게 전파해야 한다")
+                .isInstanceOf(CancellationException::class.java)
+                .hasMessage("work cancelled")
+
+            // 4) work 안의 더 짧은 timeout도 이 함수의 예산 만료와 구분한다.
+            val nestedTimeout =
+                runCatching {
+                    finishWithin(100) {
+                        withTimeout(10) { delay(1_000) }
+                    }
+                }.exceptionOrNull()
+            assertThat(nestedTimeout)
+                .describedAs("work의 별도 timeout은 이 함수의 false로 바꾸지 말고 전파해야 한다")
+                .isInstanceOf(TimeoutCancellationException::class.java)
         }
 
     /**
@@ -67,7 +99,9 @@ class Stage1Test {
             events.clear()
             val cancellation = CancellationException("stop")
             val failure = runCatching { loadOrFallback({ throw cancellation }, fallback) }.exceptionOrNull()
-            assertThat(failure).isSameAs(cancellation)
+            assertThat(failure)
+                .describedAs("CancellationException은 fallback으로 바꾸지 말고 그대로 다시 던져야 한다")
+                .isSameAs(cancellation)
             assertThat(events).isEmpty()
 
             val result =
