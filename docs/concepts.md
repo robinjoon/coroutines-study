@@ -18,6 +18,7 @@
 | CoroutineContext | 코루틴이 어떻게 실행될지 담은 설정 묶음(Job, 디스패처 등) | context stage0 |
 | 디스패처 | 코루틴을 언제, 어느 스레드에서 실행할지 정하는 스케줄러 | context |
 | 중단 지점 | 코루틴이 실제로 멈출 수 있는 곳(`delay`, `join`, `await`, `yield` 등 suspend 함수 호출) | cancellation stage0 |
+| 시간 제한 | `withTimeout(ms) { }`은 자기 시간 예산이 만료되면 블록을 취소하고 예외를 던진다. `withTimeoutOrNull`은 자기 예산 만료에 `null`을 반환한다 | cancellation stage1 (composition stage1에서 먼저 등장) |
 
 ## suspend 함수와 suspend 람다
 
@@ -98,6 +99,10 @@ deferred.await() // 끝날 때까지 기다리고 결과값을 받는다 (suspen
 
 요소들은 `+`로 합칩니다. 예: `Dispatchers.IO + CoroutineName("db")`
 
+context의 요소는 키로 꺼냅니다. 예: `coroutineContext[Job]`, `coroutineContext[ContinuationInterceptor]`.
+디스패처는 멈췄던 코루틴을 어디서 이어 실행할지 결정하는 요소이므로 `ContinuationInterceptor` 키로 꺼냅니다.
+테스트에서 `[ContinuationInterceptor]`가 보이면 "이 코루틴의 디스패처"라고 읽으면 됩니다.
+
 **디스패처**는 "이 코루틴을 언제, 어느 스레드에서 실행할까"를 정하는 스케줄러입니다.
 
 | 디스패처 | 쓰임 |
@@ -107,7 +112,7 @@ deferred.await() // 끝날 때까지 기다리고 결과값을 받는다 (suspen
 | 직접 만든 디스패처 | `Executor.asCoroutineDispatcher()`로 만든 전용 스레드풀. 테스트에서 스레드 이동을 확인할 때 씁니다 |
 | `StandardTestDispatcher` | `runTest`의 기본값. 아래에서 설명 |
 
-**중요한 점**: `launch`나 `async`는 블록을 그 자리에서 바로 실행하지 않습니다. 디스패처에게 "이 코루틴을 실행해 줘" 하고 **맡길** 뿐입니다. 실제로 언제 실행되는지는 디스패처가 정합니다.
+`runTest`의 기본 `StandardTestDispatcher`에서 `launch`와 `async`는 새 코루틴을 **대기열에 등록**합니다. 다른 디스패처나 시작 옵션에서는 실행 시작 시점이 달라질 수 있습니다.
 
 ## 코루틴, Job, 대기열의 작업은 서로 다르다
 
@@ -177,6 +182,10 @@ basics stage0의 `launchStartsWhenSchedulerRuns`는 이 대기열과 가상 시�
 그래서 중단 지점이 없는 긴 계산은 취소 요청에 바로 반응하지 않습니다. cancellation 단원에서 관찰합니다.
 
 `CancellationException`은 "실패"가 아니라 "멈추라는 신호"입니다. 일반 예외처럼 잡아서 삼키면 안 된다는 점을 cancellation stage1에서 배웁니다.
+
+`withTimeout`과 `withTimeoutOrNull`은 블록과 자식 작업에 시간 예산을 둡니다.
+자기 예산이 만료되면 전자는 `TimeoutCancellationException`을 던지고, 후자는 `null`을 반환합니다.
+블록에서 발생한 일반 실패, 취소 신호, 별도의 더 짧은 timeout은 자기 예산 만료와 구분하여 전파합니다.
 
 ## 공식 문서
 

@@ -12,7 +12,7 @@ class Stage0Test {
      * runTest는 실제로 잠들지 않고 가상 시각을 진행하므로 이 비용을 빠르게 관찰할 수 있다.
      * [공식 문서](https://kotlinlang.org/docs/composing-suspending-functions.html#sequential-by-default)
      * 관찰 지점: 두 작업의 시작과 끝, 결과 합계, currentTime을 확인하라.
-     * suspend를 두 번 호출했는데 시간이 겹치지 않은 이유는 무엇일까?
+     * 두 작업이 서로의 결과를 쓰지 않는데도 대기 시간이 더해졌다. 다음 stage에서 시간을 줄이려면 무엇이 달라져야 할까?
      */
     @Test
     fun sequentialCallsAccumulateVirtualDelay() =

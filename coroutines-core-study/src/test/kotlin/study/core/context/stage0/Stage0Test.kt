@@ -30,6 +30,7 @@ class Stage0Test {
                     childDispatcher = coroutineContext[ContinuationInterceptor]
                     events += "child:started"
                 }
+            // 자식이 아직 실행되기 전에 부모의 children에 속하는지 저장한다.
             val belongsToParent = parentJob.children.toList().contains(child)
             runCurrent()
             child.join()

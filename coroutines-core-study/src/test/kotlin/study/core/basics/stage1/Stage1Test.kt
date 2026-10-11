@@ -32,13 +32,21 @@ class Stage1Test {
                 }
 
             runCurrent()
-            assertThat(events).containsExactly("parent:body-end")
-            assertThat(caller.waitingChildCoroutines()).isEqualTo(2)
+            assertThat(events)
+                .describedAs("자식이 기다리는 동안 부모 본문은 이미 끝나 있어야 한다")
+                .containsExactly("parent:body-end")
+            assertThat(caller.waitingChildCoroutines())
+                .describedAs("가상 시각 0에 두 자식 코루틴이 각각 기다리고 있어야 한다")
+                .isEqualTo(2)
 
             advanceTimeBy(100)
             runCurrent()
-            assertThat(events).containsExactly("parent:body-end", "first:end")
-            assertThat(caller.isActive).isTrue()
+            assertThat(events)
+                .describedAs("첫 자식만 완료됐을 때 부모는 아직 반환하지 않아야 한다")
+                .containsExactly("parent:body-end", "first:end")
+            assertThat(caller.isActive)
+                .describedAs("두 번째 자식이 남아 있으므로 호출자는 아직 기다려야 한다")
+                .isTrue()
 
             caller.join()
             assertThat(events).containsExactly("parent:body-end", "first:end", "second:end", "caller:returned")
@@ -49,7 +57,8 @@ class Stage1Test {
      * launch가 반환한 Job은 작업의 완료와 취소를 다루는 손잡이다.
      * join은 완료를 기다리지만 async의 await처럼 계산 결과를 돌려주지는 않는다.
      * [공식 문서](https://kotlinlang.org/docs/coroutines-basics.html#coroutinescope-launch)
-     * 관찰 지점: join 전후의 events, 반환값 Unit, Job의 완료 상태를 확인하라.
+     * 관찰 지점: join 전후의 events와 Job의 완료 상태를 확인하라.
+     * waitForJob의 반환 타입 Unit을 결과 타입 T를 돌려주는 Deferred<T>.await()와 비교하라.
      * 기다리는 기능과 결과를 받는 기능이 별개인 이유는 무엇일까?
      */
     @Test
@@ -71,8 +80,7 @@ class Stage1Test {
             assertThat(currentTime).isEqualTo(100L)
         }
 
-    // 이 Job 아래에서 아직 끝나지 않은 가장 안쪽 코루틴(스스로 자식이 없는 Job) 수.
-    // coroutineScope가 만드는 중간 Job은 세지 않고, 그 안에서 launch한 자식만 센다.
+    // 중간 스코프의 Job을 제외하고, 자식이 없는 가장 안쪽 코루틴 수를 센다.
     private fun Job.waitingChildCoroutines(): Int =
         children.sumOf { child -> if (child.children.none()) 1 else child.waitingChildCoroutines() }
 }
