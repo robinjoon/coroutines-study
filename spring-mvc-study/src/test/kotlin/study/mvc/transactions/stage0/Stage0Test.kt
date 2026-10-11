@@ -21,7 +21,7 @@ import org.springframework.transaction.PlatformTransactionManager
  *
  * 이 테스트 클래스에는 @Transactional을 붙이지 않았다. 롤백 여부는 테스트 트랜잭션의 영향 없이 DB에 남은 행 수로 확인한다.
  *
- [* - 선언적 트랜잭션](https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/tx-decl-explained.html)
+ * - [선언적 트랜잭션](https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/tx-decl-explained.html)
  * - [코루틴과 트랜잭션](https://docs.spring.io/spring-framework/reference/languages/kotlin/coroutines.html#transactions)
  * - [Spring 7.0.9 TransactionAspectSupport 소스](https://github.com/spring-projects/spring-framework/blob/v7.0.9/spring-tx/src/main/java/org/springframework/transaction/interceptor/TransactionAspectSupport.java)
  */

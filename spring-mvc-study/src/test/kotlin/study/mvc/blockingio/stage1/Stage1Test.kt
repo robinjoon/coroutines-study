@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * 블로킹 JDBC를 코루틴에서 호출할 때는 "어느 스레드에서 블로킹할지"와 "동시에 몇 개까지 블로킹할지"를 정해야 한다.
  *
- [* - withContext](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html)
+ * - [withContext](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html)
  * - [Dispatchers.IO / limitedParallelism](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html)
  * - [Semaphore](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-semaphore/)
  */

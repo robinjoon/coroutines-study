@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit
  *
  * 이 테스트 코드는 수정하지 않는다. OrderFacade의 TODO를 구현해서 통과시키자.
  *
- [* - withContext](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html)
+ * - [withContext](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html)
  * - [트랜잭션 전파와 경계](https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/annotations.html)
  */
 @SpringBootTest(

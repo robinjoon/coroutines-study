@@ -14,7 +14,7 @@ import java.util.concurrent.Executors
  * MDC는 내부적으로 ThreadLocal이다. 값은 "스레드"에 저장된다.
  * 코루틴이 다른 스레드로 옮겨 가면 그 값은 어떻게 될까?
  *
- [* - 공식 가이드(Thread-local data)](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#thread-local-data)
+ * - [공식 가이드(Thread-local data)](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#thread-local-data)
  * - [SLF4J MDC](https://www.slf4j.org/manual.html#mdc)
  */
 class Stage0Test {

@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
  * 외부 API 여러 개를 병렬로 호출하고, 실패와 시간 초과를 정책대로 처리하자.
  * 이 테스트 코드는 수정하지 않는다. ProductSummaryService의 TODO를 구현해서 통과시키자.
  *
- [* - 공식 가이드(async로 동시 실행)](https://kotlinlang.org/docs/composing-suspending-functions.html#concurrent-using-async)
+ * - [공식 가이드(async로 동시 실행)](https://kotlinlang.org/docs/composing-suspending-functions.html#concurrent-using-async)
  * - [공식 가이드(구조화된 동시성과 async)](https://kotlinlang.org/docs/composing-suspending-functions.html#structured-concurrency-with-async)
  * - [공식 가이드(timeout)](https://kotlinlang.org/docs/cancellation-and-timeouts.html#timeout)
  * - [공식 가이드(예외 전파)](https://kotlinlang.org/docs/exception-handling.html)

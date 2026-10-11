@@ -22,7 +22,7 @@ import java.util.concurrent.Executors
  * 가상 스레드는 블로킹하는 동안 실제 OS 스레드(carrier)를 내려놓는다. 그래서 기존의 블로킹 JDBC 코드와 ThreadLocal 기반 트랜잭션을 그대로 쓰면서
  * 많은 동시 요청을 받을 수 있다. 코루틴과는 다른 방식으로 같은 문제(기다리는 동안 스레드 낭비)를 푸는 셈이다.
  *
- [* - Spring Boot 가상 스레드](https://docs.spring.io/spring-boot/reference/features/spring-application.html#features.spring-application.virtual-threads)
+ * - [Spring Boot 가상 스레드](https://docs.spring.io/spring-boot/reference/features/spring-application.html#features.spring-application.virtual-threads)
  * - [JEP 444 Virtual Threads](https://openjdk.org/jeps/444)
  */
 @SpringBootTest(

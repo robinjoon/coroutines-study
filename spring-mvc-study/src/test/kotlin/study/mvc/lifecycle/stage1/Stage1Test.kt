@@ -20,7 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList
  *
  * 이 테스트 코드는 수정하지 않는다. ApplicationCoroutineScope의 TODO를 구현해서 통과시키자.
  *
- [* - 공식 가이드(Coroutine scope)](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#coroutine-scope)
+ * - [공식 가이드(Coroutine scope)](https://kotlinlang.org/docs/coroutine-context-and-dispatchers.html#coroutine-scope)
  * - [공식 가이드(Supervision)](https://kotlinlang.org/docs/exception-handling.html#supervision)
  * - [공식 가이드(CoroutineExceptionHandler)](https://kotlinlang.org/docs/exception-handling.html#coroutineexceptionhandler)
  */
