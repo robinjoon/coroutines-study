@@ -5,6 +5,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.currentTime
@@ -78,6 +79,14 @@ class Stage1Test {
             assertThat(events).containsExactly("cancelled:finally")
             // currentTime은 앞 단계에서 흐른 시간까지 runTest 전체에서 누적된다.
             assertThat(currentTime).isEqualTo(140L)
+
+            // 같은 파이프라인 객체를 두 번 수집해도 각 수집은 새로 시작한다.
+            val reusable = selectedNumbers(flowOf(1, 2, 3, 4))
+            repeat(2) {
+                assertThat(reusable.toList())
+                    .describedAs("같은 파이프라인을 다시 수집해도 각 수집의 제한은 새로 시작해야 한다")
+                    .containsExactly(4, 8)
+            }
         }
 
     /**
@@ -114,6 +123,8 @@ class Stage1Test {
                         collected += number
                     }
                 }.exceptionOrNull()
+            // 아직 구현하지 않았다면(TODO) 그 예외를 그대로 보여 준다.
+            (collectionFailure as? NotImplementedError)?.let { throw it }
             assertThat(collectionFailure)
                 .describedAs("upstream을 옮겨도 collector의 context에서 값을 전달해야 한다")
                 .isNull()
@@ -136,6 +147,7 @@ class Stage1Test {
                 .hasMessage("upstream failed")
 
             // 생산이 끝나지 않은 흐름에서도 첫 값을 받으면 수집과 upstream 정리가 끝나야 한다.
+            // awaitCancellation은 취소될 때까지 끝나지 않고 기다리는 suspend 함수다.
             events.clear()
             val ongoingSource =
                 flow {
