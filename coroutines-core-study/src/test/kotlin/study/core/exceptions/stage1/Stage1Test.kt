@@ -43,13 +43,17 @@ class Stage1Test {
                     )
                 }
 
+            // 아직 구현하지 않았다면(TODO) 그 예외를 그대로 보여 준다.
+            (outcome.exceptionOrNull() as? NotImplementedError)?.let { throw it }
             assertThat(outcome.exceptionOrNull())
                 .describedAs("한 자식의 일반 실패가 정상 형제와 호출자까지 실패시키면 안 된다")
                 .isNull()
             val result = outcome.getOrThrow()
 
             assertThat(result).containsExactly("healthy")
-            assertThat(events).containsExactly("failure:first failed", "second:end", "second:finally")
+            assertThat(events)
+                .describedAs("실패 보고와 정상 형제의 완료·정리가 모두 남아야 한다")
+                .containsExactlyInAnyOrder("failure:first failed", "second:end", "second:finally")
             assertThat(currentTime)
                 .describedAs("실패한 자식을 처리하는 동안 정상 형제도 함께 진행되어야 한다")
                 .isEqualTo(100L)
@@ -89,6 +93,19 @@ class Stage1Test {
                 )
             assertThat(reversed).containsExactly("healthy-first")
             assertThat(events).containsExactly("failure:second failed")
+
+            // 두 작업이 모두 실패한 경우에도 각각의 일반 실패를 보고한다.
+            events.clear()
+            val failed =
+                supervisedResults(
+                    first = { throw IllegalStateException("first failed") },
+                    second = { throw IllegalArgumentException("second failed") },
+                    onFailure = { events += "failure:${it.message}" },
+                )
+            assertThat(failed).isEmpty()
+            assertThat(events)
+                .describedAs("두 작업이 모두 실패해도 각 일반 실패를 한 번씩 보고해야 한다")
+                .containsExactlyInAnyOrder("failure:first failed", "failure:second failed")
         }
 
     /**
@@ -145,6 +162,22 @@ class Stage1Test {
                     .containsExactlyInAnyOrder("first:start", "second:start", "first:finally", "second:finally")
                 assertThat(events).doesNotContain("fallback")
                 assertThat(currentTime).isEqualTo(0L)
+
+                // 부모가 활성인 상태에서도 자식 작업 자체의 취소 신호는 호출자에게 전달한다.
+                events.clear()
+                val childCancellation =
+                    runCatching {
+                        supervisedResults(
+                            first = { throw CancellationException("child stop") },
+                            second = { "healthy" },
+                            onFailure = { events += "fallback" },
+                        )
+                    }.exceptionOrNull()
+                assertThat(childCancellation)
+                    .describedAs("자식 작업의 취소도 누락된 성공 결과로 바꾸지 말고 호출자에게 전파해야 한다")
+                    .isInstanceOf(CancellationException::class.java)
+                    .hasMessage("child stop")
+                assertThat(events).describedAs("취소 신호는 일반 실패 보고 대상이 아니다").isEmpty()
             }
         }
 }
